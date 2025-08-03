@@ -236,7 +236,7 @@ function LoginForm() {
       } else {
         setError(data.message || 'Erreur de connexion');
       }
-    } catch (_error) {
+    } catch {
       setError('Erreur de connexion au serveur');
     } finally {
       setLoading(false);
@@ -247,7 +247,7 @@ function LoginForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-          Nom d'utilisateur
+          Nom d&apos;utilisateur
         </label>
         <input
           id="username"

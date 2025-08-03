@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import QRCodeDisplay from '@/components/QRCodeDisplay';
@@ -35,7 +35,7 @@ export default function WorkerDetail({ params }: { params: { id: string } }) {
     loadWorkerData();
   }, [params.id, router, loadWorkerData]);
 
-  const loadWorkerData = async () => {
+  const loadWorkerData = useCallback(async () => {
     try {
       const response = await fetch(`/api/workers/${params.id}/attendance`);
       const data = await response.json();
@@ -52,7 +52,7 @@ export default function WorkerDetail({ params }: { params: { id: string } }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR');

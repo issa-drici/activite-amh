@@ -122,7 +122,7 @@ export default function AdminDashboard() {
       } else {
         setMessage(data.message || 'Erreur lors de la création');
       }
-    } catch (_error) {
+    } catch {
       setMessage('Erreur de connexion au serveur');
     } finally {
       setLoading(false);
@@ -155,7 +155,7 @@ export default function AdminDashboard() {
       } else {
         setMessage(data.message || 'Erreur lors de l&apos;enregistrement');
       }
-    } catch (_error) {
+    } catch {
       setMessage('Erreur de connexion au serveur');
     }
   };
