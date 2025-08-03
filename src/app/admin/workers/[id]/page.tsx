@@ -18,20 +18,29 @@ interface Attendance {
   created_at: string;
 }
 
-export default async function WorkerDetail({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = await params;
-  
-  return <WorkerDetailClient workerId={resolvedParams.id} />;
+export default function WorkerDetail({ params }: { params: Promise<{ id: string }> }) {
+  return <WorkerDetailClient params={params} />;
 }
 
-function WorkerDetailClient({ workerId }: { workerId: string }) {
+function WorkerDetailClient({ params }: { params: Promise<{ id: string }> }) {
   const [worker, setWorker] = useState<Worker | null>(null);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [totalSessions, setTotalSessions] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [workerId, setWorkerId] = useState<string>('');
   const router = useRouter();
 
+  useEffect(() => {
+    const resolveParams = async () => {
+      const resolvedParams = await params;
+      setWorkerId(resolvedParams.id);
+    };
+    resolveParams();
+  }, [params]);
+
   const loadWorkerData = useCallback(async () => {
+    if (!workerId) return;
+    
     try {
       const response = await fetch(`/api/workers/${workerId}/attendance`);
       const data = await response.json();
@@ -57,8 +66,10 @@ function WorkerDetailClient({ workerId }: { workerId: string }) {
       return;
     }
 
-    loadWorkerData();
-  }, [router, loadWorkerData]);
+    if (workerId) {
+      loadWorkerData();
+    }
+  }, [router, loadWorkerData, workerId]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR');
