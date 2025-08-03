@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import QRScanner from '@/components/QRScanner';
@@ -40,6 +40,30 @@ export default function AdminDashboard() {
   const [adminData, setAdminData] = useState<AdminData | null>(null);
   const router = useRouter();
 
+  const loadWorkers = useCallback(async () => {
+    try {
+      const response = await fetch('/api/workers');
+      const data = await response.json();
+      if (data.success) {
+        setWorkers(data.workers);
+      }
+    } catch (_error) {
+      console.error('Erreur lors du chargement des travailleurs:', _error);
+    }
+  }, []);
+
+  const loadAttendance = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/attendance?date=${selectedDate}`);
+      const data = await response.json();
+      if (data.success) {
+        setAttendance(data.attendance);
+      }
+    } catch (_error) {
+      console.error('Erreur lors du chargement des présences:', _error);
+    }
+  }, [selectedDate]);
+
   useEffect(() => {
     // Vérifier si l'admin est connecté
     if (typeof window !== 'undefined') {
@@ -55,40 +79,18 @@ export default function AdminDashboard() {
       try {
         const adminInfo = JSON.parse(userData);
         setAdminData(adminInfo);
-      } catch (error) {
-        console.error('Erreur lors du parsing des données admin:', error);
-        router.push('/login');
-        return;
-      }
+          } catch (_error) {
+      console.error('Erreur lors du parsing des données admin:', _error);
+      router.push('/login');
+      return;
+    }
     }
 
     loadWorkers();
     loadAttendance();
-  }, [selectedDate, router]);
+  }, [router, loadWorkers, loadAttendance]);
 
-  const loadWorkers = async () => {
-    try {
-      const response = await fetch('/api/workers');
-      const data = await response.json();
-      if (data.success) {
-        setWorkers(data.workers);
-      }
-    } catch (error) {
-      console.error('Erreur lors du chargement des travailleurs:', error);
-    }
-  };
 
-  const loadAttendance = async () => {
-    try {
-      const response = await fetch(`/api/attendance?date=${selectedDate}`);
-      const data = await response.json();
-      if (data.success) {
-        setAttendance(data.attendance);
-      }
-    } catch (error) {
-      console.error('Erreur lors du chargement des présences:', error);
-    }
-  };
 
   const createWorker = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,7 +122,7 @@ export default function AdminDashboard() {
       } else {
         setMessage(data.message || 'Erreur lors de la création');
       }
-    } catch (error) {
+    } catch (_error) {
       setMessage('Erreur de connexion au serveur');
     } finally {
       setLoading(false);
@@ -151,9 +153,9 @@ export default function AdminDashboard() {
         loadAttendance();
         setShowScanner(false);
       } else {
-        setMessage(data.message || 'Erreur lors de l\'enregistrement');
+        setMessage(data.message || 'Erreur lors de l&apos;enregistrement');
       }
-    } catch (error) {
+    } catch (_error) {
       setMessage('Erreur de connexion au serveur');
     }
   };
@@ -358,12 +360,12 @@ export default function AdminDashboard() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nom d'utilisateur
-                </label>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nom d&apos;utilisateur
+                  </label>
                 <input
                   type="text"
-                  placeholder="Nom d'utilisateur"
+                  placeholder="Nom d&apos;utilisateur"
                   value={newWorkerUsername}
                   onChange={(e) => setNewWorkerUsername(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"

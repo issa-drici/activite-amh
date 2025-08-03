@@ -15,7 +15,7 @@ export async function GET(
       );
     }
     
-    const worker = getWorkerById(workerId);
+    const worker = await getWorkerById(workerId);
     if (!worker) {
       return NextResponse.json(
         { success: false, message: 'Travailleur non trouvé' },
@@ -23,8 +23,8 @@ export async function GET(
       );
     }
     
-    const attendance = getWorkerAttendance(workerId);
-    const attendanceCount = getWorkerAttendanceCount(workerId);
+    const attendance = await getWorkerAttendance(workerId);
+    const attendanceCount = await getWorkerAttendanceCount(workerId);
     
     return NextResponse.json({
       success: true,

@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const worker = getWorkerByQrCode(qrCode) as Worker | undefined;
+    const worker = await getWorkerByQrCode(qrCode) as Worker | undefined;
     if (!worker) {
       return NextResponse.json(
         { success: false, message: 'Travailleur non trouvé' },
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const result = markAttendance(worker.id, adminId, date, period);
+    await markAttendance(worker.id, adminId, date, period);
     
     return NextResponse.json({
       success: true,
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const attendance = getAttendanceByDate(date);
+    const attendance = await getAttendanceByDate(date);
     return NextResponse.json({ success: true, attendance });
   } catch (error) {
     console.error('Erreur lors de la récupération des présences:', error);

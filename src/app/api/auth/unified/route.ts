@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Essayer d'abord de se connecter en tant qu'admin
-    const admin = getAdminByCredentials(username, password);
+    const admin = await getAdminByCredentials(username, password);
     if (admin) {
       return NextResponse.json({ 
         success: true, 
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Essayer ensuite de se connecter en tant que travailleur
-    const worker = getWorkerByCredentials(username, password);
+    const worker = await getWorkerByCredentials(username, password);
     if (worker) {
       return NextResponse.json({ 
         success: true, 

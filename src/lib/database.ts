@@ -1,4 +1,4 @@
-import { Pool, PoolClient } from 'pg';
+import { Pool } from 'pg';
 
 // Configuration de la base de données PostgreSQL
 const pool = new Pool({

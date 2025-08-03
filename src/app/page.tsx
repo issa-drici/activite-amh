@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userType, setUserType] = useState<string | null>(null);
-  const [userData, setUserData] = useState<any>(null);
+  const [userData, setUserData] = useState<{ name: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -23,10 +22,10 @@ export default function Home() {
           setIsLoggedIn(true);
           setUserType(userTypeData);
           setUserData(parsedUserData);
-        } catch (error) {
-          console.error('Erreur lors du parsing des données utilisateur:', error);
-          setIsLoggedIn(false);
-        }
+            } catch (_error) {
+      console.error('Erreur lors du parsing des données utilisateur:', _error);
+      setIsLoggedIn(false);
+    }
       } else {
         setIsLoggedIn(false);
       }
@@ -170,7 +169,7 @@ export default function Home() {
                 <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
                   <span className="text-green-600 font-semibold text-xs">1</span>
                 </div>
-                <p>Connectez-vous en tant qu'admin</p>
+                <p>Connectez-vous en tant qu&apos;admin</p>
               </div>
               <div className="flex items-start">
                 <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
@@ -182,7 +181,7 @@ export default function Home() {
                 <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
                   <span className="text-green-600 font-semibold text-xs">3</span>
                 </div>
-                <p>Scannez le QR code de l'animateur</p>
+                <p>Scannez le QR code de l&apos;animateur</p>
               </div>
               <div className="flex items-start">
                 <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
@@ -237,7 +236,7 @@ function LoginForm() {
       } else {
         setError(data.message || 'Erreur de connexion');
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Erreur de connexion au serveur');
     } finally {
       setLoading(false);
@@ -256,7 +255,7 @@ function LoginForm() {
           type="text"
           required
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
-          placeholder="Votre nom d'utilisateur"
+          placeholder="Votre nom d&apos;utilisateur"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />

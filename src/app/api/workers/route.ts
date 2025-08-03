@@ -4,7 +4,7 @@ import { generateWorkerQrCode } from '@/lib/qr-utils';
 
 export async function GET() {
   try {
-    const workers = getAllWorkers();
+    const workers = await getAllWorkers();
     return NextResponse.json({ success: true, workers });
   } catch (error) {
     console.error('Erreur lors de la récupération des travailleurs:', error);
@@ -41,12 +41,12 @@ export async function POST(request: NextRequest) {
     }
     
     const qrCode = generateWorkerQrCode();
-    const result = createWorker(name.trim(), qrCode, username.trim(), password.trim());
+    const result = await createWorker(name.trim(), qrCode, username.trim(), password.trim());
     
     return NextResponse.json({
       success: true,
       worker: {
-        id: result.lastInsertRowid,
+        id: result.id,
         name: name.trim(),
         username: username.trim(),
         qr_code: qrCode

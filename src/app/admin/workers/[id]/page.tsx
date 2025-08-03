@@ -33,7 +33,7 @@ export default function WorkerDetail({ params }: { params: { id: string } }) {
     }
 
     loadWorkerData();
-  }, [params.id, router]);
+  }, [params.id, router, loadWorkerData]);
 
   const loadWorkerData = async () => {
     try {
