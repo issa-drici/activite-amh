@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Scan Pointage
 
-## Getting Started
+Application de gestion de pointage avec QR codes pour les employés.
 
-First, run the development server:
+## 🚀 Déploiement avec PostgreSQL
+
+Cette application utilise PostgreSQL pour une gestion robuste des données.
+
+### Configuration requise
+
+- Node.js 18+
+- PostgreSQL 15+
+
+### Variables d'environnement
+
+Créez un fichier `.env` basé sur `env.example` :
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Configuration PostgreSQL
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=scan_pointage
+DB_USER=postgres
+DB_PASSWORD=password
+
+# Environnement
+NODE_ENV=development
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Déploiement local
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Installation des dépendances** :
+   ```bash
+   npm install
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. **Configuration de PostgreSQL** :
+   - Installez PostgreSQL sur votre système
+   - Créez une base de données `scan_pointage`
+   - Configurez les variables d'environnement dans `.env`
 
-## Learn More
+3. **Démarrage de l'application** :
+   ```bash
+   npm run dev
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+### Déploiement sur Coolify
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Variables d'environnement à configurer** :
+   ```
+   DB_HOST=your-postgres-host
+   DB_PORT=5432
+   DB_NAME=scan_pointage
+   DB_USER=your-username
+   DB_PASSWORD=your-password
+   NODE_ENV=production
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+2. **Configuration de la base de données PostgreSQL** :
+   - Assurez-vous que PostgreSQL est accessible depuis votre serveur
+   - Créez la base de données `scan_pointage`
+   - Les tables seront créées automatiquement au premier démarrage
 
-## Deploy on Vercel
+### Accès par défaut
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Admin Principal** : `admin` / `admin123`
+- **Admin 2** : `admin2` / `admin123`
+- **Admin 3** : `admin3` / `admin123`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🛠️ Développement
+
+```bash
+npm run dev     # Démarrage en mode développement
+npm run build   # Construction pour la production
+npm run start   # Démarrage en mode production
+npm run lint    # Vérification du code
+```
+
+## 📊 Structure de la base de données
+
+- **admins** : Administrateurs du système
+- **workers** : Employés/travailleurs
+- **attendance** : Enregistrements de présence
+
+Les tables sont créées automatiquement au premier démarrage.
