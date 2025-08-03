@@ -4,7 +4,7 @@ import { getAdminByCredentials, getWorkerByCredentials, ensureDatabaseInitialize
 export async function POST(request: NextRequest) {
   try {
     // S'assurer que la base de données est initialisée
-    await ensureDatabaseInitialized();
+    ensureDatabaseInitialized();
     
     const { username, password } = await request.json();
     
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Essayer d'abord de se connecter en tant qu'admin
-    const admin = await getAdminByCredentials(username, password);
+    const admin = getAdminByCredentials(username, password);
     if (admin) {
       return NextResponse.json({ 
         success: true, 
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Essayer ensuite de se connecter en tant que travailleur
-    const worker = await getWorkerByCredentials(username, password);
+    const worker = getWorkerByCredentials(username, password);
     if (worker) {
       return NextResponse.json({ 
         success: true, 
