@@ -18,26 +18,22 @@ interface Attendance {
   created_at: string;
 }
 
-export default function WorkerDetail({ params }: { params: { id: string } }) {
+export default async function WorkerDetail({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  
+  return <WorkerDetailClient workerId={resolvedParams.id} />;
+}
+
+function WorkerDetailClient({ workerId }: { workerId: string }) {
   const [worker, setWorker] = useState<Worker | null>(null);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [totalSessions, setTotalSessions] = useState(0);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    // Vérifier si l'admin est connecté
-    if (typeof window !== 'undefined' && !localStorage.getItem('adminLoggedIn')) {
-      router.push('/admin/login');
-      return;
-    }
-
-    loadWorkerData();
-  }, [params.id, router, loadWorkerData]);
-
   const loadWorkerData = useCallback(async () => {
     try {
-      const response = await fetch(`/api/workers/${params.id}/attendance`);
+      const response = await fetch(`/api/workers/${workerId}/attendance`);
       const data = await response.json();
       
       if (data.success) {
@@ -52,7 +48,17 @@ export default function WorkerDetail({ params }: { params: { id: string } }) {
     } finally {
       setLoading(false);
     }
-  }, [params.id]);
+  }, [workerId]);
+
+  useEffect(() => {
+    // Vérifier si l'admin est connecté
+    if (typeof window !== 'undefined' && !localStorage.getItem('adminLoggedIn')) {
+      router.push('/admin/login');
+      return;
+    }
+
+    loadWorkerData();
+  }, [router, loadWorkerData]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR');
