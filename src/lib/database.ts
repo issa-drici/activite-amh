@@ -7,7 +7,9 @@ const pool = new Pool({
   database: process.env.DB_NAME || 'scan_pointage',
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'password',
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: process.env.NODE_ENV === 'production' ? {
+    rejectUnauthorized: false
+  } : false,
   // Configuration de connexion plus robuste
   connectionTimeoutMillis: 10000,
   idleTimeoutMillis: 30000,
