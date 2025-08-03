@@ -76,14 +76,36 @@ export async function initDatabase() {
 
       // Insérer les admins par défaut si la table est vide
       const adminCount = await client.query('SELECT COUNT(*) as count FROM admins');
-      if (parseInt(adminCount.rows[0].count) === 0) {
-        await client.query(
-          'INSERT INTO admins (name, username, password) VALUES ($1, $2, $3), ($4, $5, $6), ($7, $8, $9)',
-          ['Admin Principal', 'admin', 'admin123', 'Admin 2', 'admin2', 'admin123', 'Admin 3', 'admin3', 'admin123']
-        );
-        console.log('Admins par défaut créés');
+      const count = parseInt(adminCount.rows[0].count);
+      console.log(`Nombre d'admins existants: ${count}`);
+      
+      if (count === 0) {
+        console.log('Création des admins par défaut...');
+        
+        // Créer les trois admins par défaut
+        const admins = [
+          { name: 'Admin Principal', username: 'admin', password: 'admin123' },
+          { name: 'Admin 2', username: 'admin2', password: 'admin123' },
+          { name: 'Admin 3', username: 'admin3', password: 'admin123' }
+        ];
+        
+        for (const admin of admins) {
+          await client.query(
+            'INSERT INTO admins (name, username, password) VALUES ($1, $2, $3)',
+            [admin.name, admin.username, admin.password]
+          );
+          console.log(`✅ Admin créé: ${admin.name} (${admin.username})`);
+        }
+        
+        console.log('🎉 Tous les admins par défaut ont été créés avec succès !');
       } else {
-        console.log('Admins existants trouvés');
+        console.log('📋 Admins existants trouvés dans la base de données');
+        
+        // Lister les admins existants
+        const existingAdmins = await client.query('SELECT name, username FROM admins ORDER BY id');
+        existingAdmins.rows.forEach((admin, index) => {
+          console.log(`  ${index + 1}. ${admin.name} (${admin.username})`);
+        });
       }
     } finally {
       client.release();
@@ -242,6 +264,30 @@ export async function getWorkerAttendanceCount(workerId: number) {
 }
 
 // Initialiser la base de données au démarrage
-initDatabase().catch(console.error);
+let dbInitialized = false;
+
+export async function ensureDatabaseInitialized() {
+  if (!dbInitialized) {
+    try {
+      await initDatabase();
+      dbInitialized = true;
+      console.log('Base de données initialisée avec succès');
+    } catch (error) {
+      console.error('Erreur lors de l\'initialisation de la base de données:', error);
+      throw error;
+    }
+  }
+}
+
+// Initialisation au démarrage (non-bloquante)
+initDatabase()
+  .then(() => {
+    dbInitialized = true;
+    console.log('Base de données initialisée avec succès au démarrage');
+  })
+  .catch((error) => {
+    console.error('Erreur lors de l\'initialisation au démarrage:', error);
+    // Ne pas faire échouer l'application, on réessaiera lors de la première requête
+  });
 
 export default pool; 

@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminByCredentials, getWorkerByCredentials } from '@/lib/database';
+import { getAdminByCredentials, getWorkerByCredentials, ensureDatabaseInitialized } from '@/lib/database';
 
 export async function POST(request: NextRequest) {
   try {
+    // S'assurer que la base de données est initialisée
+    await ensureDatabaseInitialized();
+    
     const { username, password } = await request.json();
     
     if (!username || !password) {

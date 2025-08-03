@@ -70,11 +70,29 @@ NODE_ENV=development
 ## 🛠️ Développement
 
 ```bash
-npm run dev     # Démarrage en mode développement
-npm run build   # Construction pour la production
-npm run start   # Démarrage en mode production
-npm run lint    # Vérification du code
+npm run dev         # Démarrage en mode développement
+npm run build       # Construction pour la production
+npm run start       # Démarrage en mode production
+npm run lint        # Vérification du code
+npm run test-db     # Test de connexion PostgreSQL
+npm run init-admins # Initialisation des admins par défaut
 ```
+
+## 🔧 Outils de diagnostic
+
+### Test de connexion PostgreSQL
+```bash
+npm run test-db
+```
+
+### Initialisation des admins
+```bash
+npm run init-admins
+```
+
+### Endpoints de diagnostic
+- `GET /api/health` - Test de santé de la base de données
+- `GET /api/admins` - Liste des admins existants
 
 ## 📊 Structure de la base de données
 

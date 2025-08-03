@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
-import pool from '@/lib/database';
+import pool, { ensureDatabaseInitialized } from '@/lib/database';
 
 export async function GET() {
   try {
     console.log('Test de connexion à la base de données...');
+    
+    // S'assurer que la base de données est initialisée
+    await ensureDatabaseInitialized();
     
     const client = await pool.connect();
     try {

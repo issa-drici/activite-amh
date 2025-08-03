@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test-db": "node test-db.js",
+    "init-admins": "node init-admins.js"
   },
   "dependencies": {
     "@types/qrcode": "^1.5.5",
