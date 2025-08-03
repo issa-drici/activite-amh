@@ -49,8 +49,19 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error('Erreur d\'authentification:', error);
+    
+    // Log détaillé pour le diagnostic
+    if (error instanceof Error) {
+      console.error('Message d\'erreur:', error.message);
+      console.error('Stack trace:', error.stack);
+    }
+    
     return NextResponse.json(
-      { success: false, message: 'Erreur serveur' },
+      { 
+        success: false, 
+        message: 'Erreur serveur',
+        error: process.env.NODE_ENV === 'development' ? error instanceof Error ? error.message : 'Erreur inconnue' : undefined
+      },
       { status: 500 }
     );
   }

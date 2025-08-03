@@ -8,61 +8,89 @@ const pool = new Pool({
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'password',
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  // Configuration de connexion plus robuste
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
+  max: 20,
+});
+
+// Log de la configuration (sans les mots de passe)
+console.log('Configuration DB:', {
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || '5432',
+  database: process.env.DB_NAME || 'scan_pointage',
+  user: process.env.DB_USER || 'postgres',
+  ssl: process.env.NODE_ENV === 'production',
+  nodeEnv: process.env.NODE_ENV
 });
 
 // Initialiser la base de données
 export async function initDatabase() {
-  const client = await pool.connect();
+  console.log('Tentative de connexion à la base de données...');
   
   try {
-    // Table des admins
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS admins (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        username VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+    const client = await pool.connect();
+    console.log('Connexion à PostgreSQL réussie');
+    
+    try {
+      // Table des admins
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS admins (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          username VARCHAR(255) UNIQUE NOT NULL,
+          password VARCHAR(255) NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('Table admins créée/vérifiée');
 
-    // Table des travailleurs
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS workers (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        qr_code VARCHAR(255) UNIQUE NOT NULL,
-        username VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+      // Table des travailleurs
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS workers (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          qr_code VARCHAR(255) UNIQUE NOT NULL,
+          username VARCHAR(255) UNIQUE NOT NULL,
+          password VARCHAR(255) NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('Table workers créée/vérifiée');
 
-    // Table des présences
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS attendance (
-        id SERIAL PRIMARY KEY,
-        worker_id INTEGER NOT NULL,
-        admin_id INTEGER NOT NULL,
-        date DATE NOT NULL,
-        period VARCHAR(20) NOT NULL CHECK (period IN ('morning', 'afternoon')),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (worker_id) REFERENCES workers (id) ON DELETE CASCADE,
-        FOREIGN KEY (admin_id) REFERENCES admins (id) ON DELETE CASCADE,
-        UNIQUE(worker_id, date, period)
-      )
-    `);
+      // Table des présences
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS attendance (
+          id SERIAL PRIMARY KEY,
+          worker_id INTEGER NOT NULL,
+          admin_id INTEGER NOT NULL,
+          date DATE NOT NULL,
+          period VARCHAR(20) NOT NULL CHECK (period IN ('morning', 'afternoon')),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (worker_id) REFERENCES workers (id) ON DELETE CASCADE,
+          FOREIGN KEY (admin_id) REFERENCES admins (id) ON DELETE CASCADE,
+          UNIQUE(worker_id, date, period)
+        )
+      `);
+      console.log('Table attendance créée/vérifiée');
 
-    // Insérer les admins par défaut si la table est vide
-    const adminCount = await client.query('SELECT COUNT(*) as count FROM admins');
-    if (parseInt(adminCount.rows[0].count) === 0) {
-      await client.query(
-        'INSERT INTO admins (name, username, password) VALUES ($1, $2, $3), ($4, $5, $6), ($7, $8, $9)',
-        ['Admin Principal', 'admin', 'admin123', 'Admin 2', 'admin2', 'admin123', 'Admin 3', 'admin3', 'admin123']
-      );
+      // Insérer les admins par défaut si la table est vide
+      const adminCount = await client.query('SELECT COUNT(*) as count FROM admins');
+      if (parseInt(adminCount.rows[0].count) === 0) {
+        await client.query(
+          'INSERT INTO admins (name, username, password) VALUES ($1, $2, $3), ($4, $5, $6), ($7, $8, $9)',
+          ['Admin Principal', 'admin', 'admin123', 'Admin 2', 'admin2', 'admin123', 'Admin 3', 'admin3', 'admin123']
+        );
+        console.log('Admins par défaut créés');
+      } else {
+        console.log('Admins existants trouvés');
+      }
+    } finally {
+      client.release();
     }
-  } finally {
-    client.release();
+  } catch (error) {
+    console.error('Erreur lors de l\'initialisation de la base de données:', error);
+    throw error;
   }
 }
 
@@ -101,29 +129,39 @@ export async function getWorkerByQrCode(qrCode: string) {
 }
 
 export async function getWorkerByCredentials(username: string, password: string) {
-  const client = await pool.connect();
   try {
-    const result = await client.query(
-      'SELECT * FROM workers WHERE username = $1 AND password = $2',
-      [username, password]
-    );
-    return result.rows[0] || null;
-  } finally {
-    client.release();
+    const client = await pool.connect();
+    try {
+      const result = await client.query(
+        'SELECT * FROM workers WHERE username = $1 AND password = $2',
+        [username, password]
+      );
+      return result.rows[0] || null;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('Erreur lors de la vérification des credentials worker:', error);
+    throw error;
   }
 }
 
 // Fonctions pour les admins
 export async function getAdminByCredentials(username: string, password: string) {
-  const client = await pool.connect();
   try {
-    const result = await client.query(
-      'SELECT * FROM admins WHERE username = $1 AND password = $2',
-      [username, password]
-    );
-    return result.rows[0] || null;
-  } finally {
-    client.release();
+    const client = await pool.connect();
+    try {
+      const result = await client.query(
+        'SELECT * FROM admins WHERE username = $1 AND password = $2',
+        [username, password]
+      );
+      return result.rows[0] || null;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('Erreur lors de la vérification des credentials admin:', error);
+    throw error;
   }
 }
 
