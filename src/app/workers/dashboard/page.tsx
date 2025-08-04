@@ -25,9 +25,17 @@ interface AssignedActivity {
   assigned_at: string;
 }
 
+interface Attendance {
+  date: string;
+  period: string;
+  created_at: string;
+}
+
 export default function WorkerDashboard() {
   const [workerData, setWorkerData] = useState<WorkerData | null>(null);
   const [assignedActivities, setAssignedActivities] = useState<AssignedActivity[]>([]);
+  const [attendance, setAttendance] = useState<Attendance[]>([]);
+  const [totalSessions, setTotalSessions] = useState(0);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -42,6 +50,21 @@ export default function WorkerDashboard() {
       }
     } catch (_error) {
       console.error('Erreur lors du chargement des activités:', _error);
+    }
+  }, [workerData]);
+
+  const loadAttendance = useCallback(async () => {
+    if (!workerData) return;
+    
+    try {
+      const response = await fetch(`/api/workers/${workerData.id}/attendance`);
+      const data = await response.json();
+      if (data.success) {
+        setAttendance(data.attendance);
+        setTotalSessions(data.totalSessions);
+      }
+    } catch (_error) {
+      console.error('Erreur lors du chargement des présences:', _error);
     }
   }, [workerData]);
 
@@ -72,8 +95,9 @@ export default function WorkerDashboard() {
   useEffect(() => {
     if (workerData) {
       loadAssignedActivities();
+      loadAttendance();
     }
-  }, [workerData, loadAssignedActivities]);
+  }, [workerData, loadAssignedActivities, loadAttendance]);
 
   const logout = () => {
     localStorage.removeItem('userLoggedIn');
@@ -86,6 +110,18 @@ export default function WorkerDashboard() {
     return new Date(dateString).toLocaleDateString('fr-FR', {
       timeZone: 'Europe/Paris'
     });
+  };
+
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Europe/Paris'
+    });
+  };
+
+  const getPeriodLabel = (period: string) => {
+    return period === 'morning' ? 'Matin' : 'Après-midi';
   };
 
   if (loading) {
@@ -133,7 +169,7 @@ export default function WorkerDashboard() {
             👋 Bonjour, {workerData.name} !
           </h1>
           <p className="text-gray-600">
-            Voici vos activités assignées
+            Voici vos activités assignées et vos présences
           </p>
         </div>
 
@@ -150,6 +186,41 @@ export default function WorkerDashboard() {
               Présentez ce QR code pour pointer votre présence
             </p>
           </div>
+        </div>
+
+        {/* Statistiques de présence */}
+        <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 border-l-4 border-blue-500">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">📊 Mes Présences</h2>
+          <div className="text-center mb-4">
+            <div className="text-3xl font-bold text-blue-600">{totalSessions}</div>
+            <div className="text-sm text-gray-600">Sessions totales</div>
+          </div>
+          
+          {attendance.length === 0 ? (
+            <div className="text-center py-4">
+              <p className="text-gray-500">Aucune présence enregistrée</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Dernières présences :</h3>
+              {attendance.slice(0, 5).map((session, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                      <span className="text-green-600 text-sm">✓</span>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">{formatDate(session.date)}</div>
+                      <div className="text-sm text-gray-600">{getPeriodLabel(session.period)}</div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {formatTime(session.created_at)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Activités assignées */}
