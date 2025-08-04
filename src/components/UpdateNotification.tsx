@@ -58,9 +58,9 @@ export default function UpdateNotification() {
             <h3 className="text-sm font-semibold text-blue-900">
               Mise à jour disponible
             </h3>
-            <p className="text-sm text-blue-700 mt-1">
-              Une nouvelle version de l'application est disponible. Voulez-vous l'installer maintenant ?
-            </p>
+                          <p className="text-sm text-blue-700 mt-1">
+                Une nouvelle version de l&apos;application est disponible. Voulez-vous l&apos;installer maintenant ?
+              </p>
             <div className="mt-3 flex space-x-2">
               <button
                 onClick={handleUpdate}
