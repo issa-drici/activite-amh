@@ -155,12 +155,16 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
       const data = await response.json();
       
       if (data.success) {
+        // Afficher une alerte de succès
+        alert('✅ Feuille de route sauvegardée avec succès !');
         setMessage('✅ Feuille de route sauvegardée avec succès !');
         setChecklist(prev => ({
           ...prev,
           id: data.checklist.id,
           last_updated: new Date().toISOString()
         }));
+        // Scroll vers le haut pour voir le message
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         setMessage('❌ Erreur lors de la sauvegarde : ' + data.message);
       }
@@ -233,8 +237,21 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
         </div>
 
         {message && (
-          <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <p className="text-blue-800 text-sm">{message}</p>
+          <div className={`mb-4 rounded-xl p-4 border-2 ${
+            message.includes('✅') 
+              ? 'bg-green-50 border-green-300 animate-pulse' 
+              : 'bg-red-50 border-red-300'
+          }`}>
+            <div className="flex items-center">
+              <span className="text-2xl mr-3">
+                {message.includes('✅') ? '✅' : '❌'}
+              </span>
+              <p className={`text-lg font-medium ${
+                message.includes('✅') ? 'text-green-800' : 'text-red-800'
+              }`}>
+                {message}
+              </p>
+            </div>
           </div>
         )}
 
