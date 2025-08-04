@@ -257,7 +257,7 @@ export default function ActivitiesPage() {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Participants max *
+                    Participants *
                   </label>
                   <input
                     type="number"
