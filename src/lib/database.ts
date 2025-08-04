@@ -485,12 +485,12 @@ export function getAllActivities(): Promise<Array<Activity & { created_by_name: 
   });
 }
 
-export function getActivityById(id: number): Promise<Activity & { created_by_name: string } | null> {
+export async function getActivityById(id: number): Promise<Activity & { created_by_name: string } | null> {
   return new Promise((resolve, reject) => {
     db.get(`
       SELECT a.*, adm.name as created_by_name
       FROM activities a
-      JOIN admins adm ON a.created_by = adm.id
+      LEFT JOIN admins adm ON a.created_by = adm.id
       WHERE a.id = ?
     `, [id], (err, row) => {
       if (err) reject(err);
@@ -600,6 +600,16 @@ export function getActivityChecklists(activityId: number): Promise<Array<Activit
       else resolve(rows as Array<ActivityChecklist & { worker_name: string }>);
     });
   });
+}
+
+export async function removeWorkerFromActivity(activityId: number, workerId: number): Promise<void> {
+  try {
+    const stmt = db.prepare('DELETE FROM activity_workers WHERE activity_id = ? AND worker_id = ?');
+    stmt.run(activityId, workerId);
+  } catch (error) {
+    console.error('Erreur lors du retrait de l\'animateur:', error);
+    throw error;
+  }
 }
 
 // Initialiser la base de données au démarrage

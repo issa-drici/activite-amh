@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import AdminNavigation from '@/components/AdminNavigation';
 
 interface AdminData {
@@ -373,14 +374,17 @@ export default function ActivitiesPage() {
                     <p className="text-sm text-gray-600 mt-2">{activity.description}</p>
                   )}
                   
-                  <div className="flex space-x-2 mt-3">
-                    <button className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-                      👥 Attribuer
-                    </button>
-                    <button className="flex-1 bg-green-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
-                      📋 Feuilles
-                    </button>
-                  </div>
+                                     <div className="flex space-x-2 mt-3">
+                     <Link
+                       href={`/admin/activities/${activity.id}/assign`}
+                       className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors text-center"
+                     >
+                       👥 Attribuer
+                     </Link>
+                     <button className="flex-1 bg-green-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
+                       📋 Feuilles
+                     </button>
+                   </div>
                 </div>
               </div>
             ))
