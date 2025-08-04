@@ -169,9 +169,17 @@ export default function AssignWorkersPage({ params }: { params: Promise<{ id: st
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      timeZone: 'Europe/Paris'
-    });
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Date invalide';
+      }
+      return date.toLocaleDateString('fr-FR', {
+        timeZone: 'Europe/Paris'
+      });
+    } catch (error) {
+      return 'Date invalide';
+    }
   };
 
   const isWorkerAssigned = (workerId: number) => {

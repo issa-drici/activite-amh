@@ -38,7 +38,8 @@ export async function POST(request: NextRequest) {
       maxParticipants,
       transportMode,
       category,
-      createdBy
+      createdBy,
+      selectedWorkers
     } = await request.json();
     
     // Validation des données
@@ -61,6 +62,13 @@ export async function POST(request: NextRequest) {
       category,
       createdBy
     );
+    
+    // Assigner les animateurs sélectionnés si fournis
+    if (selectedWorkers && Array.isArray(selectedWorkers) && selectedWorkers.length > 0) {
+      for (const workerId of selectedWorkers) {
+        await assignWorkerToActivity(activity.id, workerId);
+      }
+    }
     
     return NextResponse.json({
       success: true,

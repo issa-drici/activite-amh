@@ -517,17 +517,17 @@ export function assignWorkerToActivity(activityId: number, workerId: number): Pr
   });
 }
 
-export function getActivityWorkers(activityId: number): Promise<Array<Worker>> {
+export function getActivityWorkers(activityId: number): Promise<Array<{ worker_id: number; worker_name: string; assigned_at: string }>> {
   return new Promise((resolve, reject) => {
     db.all(`
-      SELECT w.*
+      SELECT w.id as worker_id, w.name as worker_name, aw.assigned_at
       FROM workers w
       JOIN activity_workers aw ON w.id = aw.worker_id
       WHERE aw.activity_id = ?
       ORDER BY w.name
     `, [activityId], (err, rows) => {
       if (err) reject(err);
-      else resolve(rows as Worker[]);
+      else resolve(rows as Array<{ worker_id: number; worker_name: string; assigned_at: string }>);
     });
   });
 }
