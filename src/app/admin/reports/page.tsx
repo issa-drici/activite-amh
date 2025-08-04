@@ -125,7 +125,11 @@ export default function ReportsPage() {
   };
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('fr-FR', {
+    // Ajouter 2 heures pour corriger le décalage
+    const date = new Date(dateString);
+    date.setHours(date.getHours() + 2);
+    
+    return date.toLocaleTimeString('fr-FR', {
       hour: '2-digit',
       minute: '2-digit',
       timeZone: 'Europe/Paris'

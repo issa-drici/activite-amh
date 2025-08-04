@@ -148,6 +148,9 @@ export default function ActivityChecklistPage({ params }: { params: Promise<{ id
       if (isNaN(date.getTime())) {
         return 'Heure invalide';
       }
+      // Ajouter 2 heures pour corriger le décalage
+      date.setHours(date.getHours() + 2);
+      
       return date.toLocaleTimeString('fr-FR', {
         hour: '2-digit',
         minute: '2-digit',

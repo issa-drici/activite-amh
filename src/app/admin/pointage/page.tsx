@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminNavigation from '@/components/AdminNavigation';
 import QRScanner from '@/components/QRScanner';
+import CameraTest from '@/components/CameraTest';
 
 interface AdminData {
   id: number;
@@ -24,6 +25,7 @@ export default function PointagePage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedPeriod, setSelectedPeriod] = useState<'morning' | 'afternoon'>('morning');
   const [showScanner, setShowScanner] = useState(false);
+  const [showCameraTest, setShowCameraTest] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -182,12 +184,19 @@ export default function PointagePage() {
               </select>
             </div>
             
-            <div className="flex items-end">
+            <div className="flex items-end space-x-2">
               <button
                 onClick={() => setShowScanner(true)}
-                className="w-full bg-green-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-green-700 transition-colors"
+                className="flex-1 bg-green-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-green-700 transition-colors"
               >
                 📱 Commencer le scan
+              </button>
+              <button
+                onClick={() => setShowCameraTest(!showCameraTest)}
+                className="px-4 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
+                title="Tester la caméra"
+              >
+                🔍
               </button>
             </div>
           </div>
@@ -216,6 +225,13 @@ export default function PointagePage() {
             >
               ❌ Annuler le scan
             </button>
+          </div>
+        )}
+
+        {/* Test de la caméra */}
+        {showCameraTest && (
+          <div className="mb-6">
+            <CameraTest />
           </div>
         )}
 
