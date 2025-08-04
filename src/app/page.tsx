@@ -69,7 +69,7 @@ export default function Home() {
               Activités AMH Été 2025
             </h1>
             <p className="text-lg text-gray-600">
-              Pointage rapide des animateurs par QR code
+              Gestion des activités AMH Été 2025
             </p>
         </div>
 
