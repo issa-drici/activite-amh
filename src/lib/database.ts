@@ -274,6 +274,44 @@ export function getWorkerAttendanceCount(workerId: number): Promise<{ count: num
   });
 }
 
+export function getAllAttendance(): Promise<Array<{ 
+  worker_id: number; 
+  worker_name: string; 
+  worker_username: string; 
+  date: string; 
+  period: string; 
+  created_at: string; 
+  admin_name: string 
+}>> {
+  return new Promise((resolve, reject) => {
+    db.all(`
+      SELECT 
+        a.worker_id,
+        w.name as worker_name,
+        w.username as worker_username,
+        a.date,
+        a.period,
+        a.created_at,
+        adm.name as admin_name
+      FROM attendance a
+      JOIN workers w ON a.worker_id = w.id
+      JOIN admins adm ON a.admin_id = adm.id
+      ORDER BY a.date DESC, w.name, a.period
+    `, (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows as Array<{ 
+        worker_id: number; 
+        worker_name: string; 
+        worker_username: string; 
+        date: string; 
+        period: string; 
+        created_at: string; 
+        admin_name: string 
+      }>);
+    });
+  });
+}
+
 // Initialiser la base de données au démarrage
 let dbInitialized = false;
 

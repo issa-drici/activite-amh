@@ -167,6 +167,32 @@ export default function AdminDashboard() {
     router.push('/admin/login');
   };
 
+  const exportAttendanceCSV = async () => {
+    try {
+      const response = await fetch('/api/export-attendance');
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `presences_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        setMessage('Export CSV réussi !');
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setMessage('Erreur lors de l\'export CSV');
+        setTimeout(() => setMessage(''), 3000);
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'export CSV:', error);
+      setMessage('Erreur lors de l\'export CSV');
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
       timeZone: 'Europe/Paris'
@@ -286,9 +312,20 @@ export default function AdminDashboard() {
           )}
 
           <div className="border-t pt-4">
-            <h3 className="text-lg font-semibold mb-3">
-              Présences du {formatDate(selectedDate)}
-            </h3>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-lg font-semibold">
+                Présences du {formatDate(selectedDate)}
+              </h3>
+              <button
+                onClick={exportAttendanceCSV}
+                className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Export CSV
+              </button>
+            </div>
             <div className="space-y-2">
               {attendance.length === 0 ? (
                 <div className="text-center py-8">
