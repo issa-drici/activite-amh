@@ -111,14 +111,28 @@ export function initDatabase() {
                     completed++;
                     if (completed === admins.length) {
                       console.log('🎉 Tous les admins par défaut ont été créés avec succès !');
-                      resolve();
+                      
+                      // Créer les tables pour les activités
+                      createActivityTables().then(() => {
+                        resolve();
+                      }).catch((error) => {
+                        console.error('Erreur création tables activités:', error);
+                        reject(error);
+                      });
                     }
                   }
                 );
               }
             } else {
               console.log('📋 Admins existants trouvés dans la base de données');
-              resolve();
+              
+              // Créer les tables pour les activités
+              createActivityTables().then(() => {
+                resolve();
+              }).catch((error: Error) => {
+                console.error('Erreur création tables activités:', error);
+                reject(error);
+              });
             }
           });
         });
@@ -152,6 +166,111 @@ interface Attendance {
   date: string;
   period: string;
   created_at: string;
+}
+
+interface Activity {
+  id: number;
+  title: string;
+  description?: string;
+  location: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  max_participants: number;
+  transport_mode: string;
+  created_by: number;
+  created_at: string;
+}
+
+interface ActivityWorker {
+  id: number;
+  activity_id: number;
+  worker_id: number;
+  assigned_at: string;
+}
+
+interface ActivityChecklist {
+  id: number;
+  activity_id: number;
+  worker_id: number;
+  departure_check: boolean;
+  return_check: boolean;
+  comments?: string;
+  last_updated: string;
+}
+
+// Fonction pour créer les tables d'activités
+function createActivityTables(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    // Table des activités
+    db.run(`
+      CREATE TABLE IF NOT EXISTS activities (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT,
+        location TEXT NOT NULL,
+        date TEXT NOT NULL,
+        start_time TEXT NOT NULL,
+        end_time TEXT NOT NULL,
+        max_participants INTEGER NOT NULL,
+        transport_mode TEXT NOT NULL,
+        created_by INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (created_by) REFERENCES admins (id) ON DELETE CASCADE
+      )
+    `, (err) => {
+      if (err) {
+        console.error('Erreur création table activities:', err);
+        reject(err);
+        return;
+      }
+      console.log('Table activities créée/vérifiée');
+
+      // Table des attributions d'animateurs
+      db.run(`
+        CREATE TABLE IF NOT EXISTS activity_workers (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          activity_id INTEGER NOT NULL,
+          worker_id INTEGER NOT NULL,
+          assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (activity_id) REFERENCES activities (id) ON DELETE CASCADE,
+          FOREIGN KEY (worker_id) REFERENCES workers (id) ON DELETE CASCADE,
+          UNIQUE(activity_id, worker_id)
+        )
+      `, (err) => {
+        if (err) {
+          console.error('Erreur création table activity_workers:', err);
+          reject(err);
+          return;
+        }
+        console.log('Table activity_workers créée/vérifiée');
+
+        // Table des feuilles de route
+        db.run(`
+          CREATE TABLE IF NOT EXISTS activity_checklists (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            activity_id INTEGER NOT NULL,
+            worker_id INTEGER NOT NULL,
+            departure_check BOOLEAN DEFAULT FALSE,
+            return_check BOOLEAN DEFAULT FALSE,
+            comments TEXT,
+            last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (activity_id) REFERENCES activities (id) ON DELETE CASCADE,
+            FOREIGN KEY (worker_id) REFERENCES workers (id) ON DELETE CASCADE,
+            UNIQUE(activity_id, worker_id)
+          )
+        `, (err) => {
+          if (err) {
+            console.error('Erreur création table activity_checklists:', err);
+            reject(err);
+            return;
+          }
+          console.log('Table activity_checklists créée/vérifiée');
+          resolve();
+        });
+      });
+    });
+  });
 }
 
 // Fonctions pour les travailleurs
@@ -308,6 +427,173 @@ export function getAllAttendance(): Promise<Array<{
         created_at: string; 
         admin_name: string 
       }>);
+    });
+  });
+}
+
+// Fonctions pour les activités
+export function createActivity(
+  title: string,
+  description: string,
+  location: string,
+  date: string,
+  startTime: string,
+  endTime: string,
+  maxParticipants: number,
+  transportMode: string,
+  createdBy: number
+): Promise<Activity> {
+  return new Promise((resolve, reject) => {
+    db.run(`
+      INSERT INTO activities (title, description, location, date, start_time, end_time, max_participants, transport_mode, created_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [title, description, location, date, startTime, endTime, maxParticipants, transportMode, createdBy], 
+    function(err) {
+      if (err) reject(err);
+      else resolve({
+        id: this.lastID,
+        title,
+        description,
+        location,
+        date,
+        start_time: startTime,
+        end_time: endTime,
+        max_participants: maxParticipants,
+        transport_mode: transportMode,
+        created_by: createdBy,
+        created_at: new Date().toISOString()
+      });
+    });
+  });
+}
+
+export function getAllActivities(): Promise<Array<Activity & { created_by_name: string }>> {
+  return new Promise((resolve, reject) => {
+    db.all(`
+      SELECT a.*, adm.name as created_by_name
+      FROM activities a
+      JOIN admins adm ON a.created_by = adm.id
+      ORDER BY a.date DESC, a.start_time
+    `, (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows as Array<Activity & { created_by_name: string }>);
+    });
+  });
+}
+
+export function getActivityById(id: number): Promise<Activity & { created_by_name: string } | null> {
+  return new Promise((resolve, reject) => {
+    db.get(`
+      SELECT a.*, adm.name as created_by_name
+      FROM activities a
+      JOIN admins adm ON a.created_by = adm.id
+      WHERE a.id = ?
+    `, [id], (err, row) => {
+      if (err) reject(err);
+      else resolve(row as Activity & { created_by_name: string } | null);
+    });
+  });
+}
+
+export function assignWorkerToActivity(activityId: number, workerId: number): Promise<ActivityWorker> {
+  return new Promise((resolve, reject) => {
+    db.run(`
+      INSERT INTO activity_workers (activity_id, worker_id)
+      VALUES (?, ?)
+    `, [activityId, workerId], 
+    function(err) {
+      if (err) reject(err);
+      else resolve({
+        id: this.lastID,
+        activity_id: activityId,
+        worker_id: workerId,
+        assigned_at: new Date().toISOString()
+      });
+    });
+  });
+}
+
+export function getActivityWorkers(activityId: number): Promise<Array<Worker>> {
+  return new Promise((resolve, reject) => {
+    db.all(`
+      SELECT w.*
+      FROM workers w
+      JOIN activity_workers aw ON w.id = aw.worker_id
+      WHERE aw.activity_id = ?
+      ORDER BY w.name
+    `, [activityId], (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows as Worker[]);
+    });
+  });
+}
+
+export function getWorkerActivities(workerId: number): Promise<Array<Activity & { created_by_name: string }>> {
+  return new Promise((resolve, reject) => {
+    db.all(`
+      SELECT a.*, adm.name as created_by_name
+      FROM activities a
+      JOIN admins adm ON a.created_by = adm.id
+      JOIN activity_workers aw ON a.id = aw.activity_id
+      WHERE aw.worker_id = ?
+      ORDER BY a.date DESC, a.start_time
+    `, [workerId], (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows as Array<Activity & { created_by_name: string }>);
+    });
+  });
+}
+
+export function updateActivityChecklist(
+  activityId: number,
+  workerId: number,
+  departureCheck: boolean,
+  returnCheck: boolean,
+  comments: string
+): Promise<ActivityChecklist> {
+  return new Promise((resolve, reject) => {
+    db.run(`
+      INSERT OR REPLACE INTO activity_checklists (activity_id, worker_id, departure_check, return_check, comments, last_updated)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [activityId, workerId, departureCheck, returnCheck, comments, new Date().toISOString()], 
+    function(err) {
+      if (err) reject(err);
+      else resolve({
+        id: this.lastID,
+        activity_id: activityId,
+        worker_id: workerId,
+        departure_check: departureCheck,
+        return_check: returnCheck,
+        comments,
+        last_updated: new Date().toISOString()
+      });
+    });
+  });
+}
+
+export function getActivityChecklist(activityId: number, workerId: number): Promise<ActivityChecklist | null> {
+  return new Promise((resolve, reject) => {
+    db.get(`
+      SELECT * FROM activity_checklists
+      WHERE activity_id = ? AND worker_id = ?
+    `, [activityId, workerId], (err, row) => {
+      if (err) reject(err);
+      else resolve(row as ActivityChecklist | null);
+    });
+  });
+}
+
+export function getActivityChecklists(activityId: number): Promise<Array<ActivityChecklist & { worker_name: string }>> {
+  return new Promise((resolve, reject) => {
+    db.all(`
+      SELECT ac.*, w.name as worker_name
+      FROM activity_checklists ac
+      JOIN workers w ON ac.worker_id = w.id
+      WHERE ac.activity_id = ?
+      ORDER BY w.name
+    `, [activityId], (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows as Array<ActivityChecklist & { worker_name: string }>);
     });
   });
 }
