@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createActivity, getAllActivities, ensureDatabaseInitialized } from '@/lib/database';
+import { createActivity, getAllActivities, ensureDatabaseInitialized, assignWorkerToActivity } from '@/lib/database';
 
 export async function GET(request: NextRequest) {
   try {

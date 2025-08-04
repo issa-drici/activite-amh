@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface WorkerData {
@@ -49,16 +49,17 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
   const [activityId, setActivityId] = useState<string>('');
   const router = useRouter();
 
+  // Charger les paramètres de l'URL
   useEffect(() => {
     const loadParams = async () => {
-      const resolvedParams = await params;
-      setActivityId(resolvedParams.id);
+      const { id } = await params;
+      setActivityId(id);
     };
     loadParams();
   }, [params]);
 
+  // Vérifier l'authentification
   useEffect(() => {
-    // Vérifier si l'animateur est connecté
     if (typeof window !== 'undefined') {
       const userLoggedIn = localStorage.getItem('userLoggedIn');
       const userType = localStorage.getItem('userType');
@@ -72,8 +73,8 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
       try {
         const workerInfo = JSON.parse(userData);
         setWorkerData(workerInfo);
-      } catch (_error) {
-        console.error('Erreur lors du parsing des données animateur:', _error);
+      } catch (error) {
+        console.error('Erreur lors du parsing des données animateur:', error);
         router.push('/workers/login');
         return;
       }
@@ -81,14 +82,9 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
     }
   }, [router]);
 
-  useEffect(() => {
-    if (workerData && activityId) {
-      loadActivity();
-      loadChecklist();
-    }
-  }, [workerData, activityId]);
-
-  const loadActivity = async () => {
+  const loadActivity = useCallback(async () => {
+    if (!activityId) return;
+    
     try {
       const response = await fetch(`/api/activities/${activityId}`);
       const data = await response.json();
@@ -97,27 +93,39 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
         setChecklist(prev => ({
           ...prev,
           activity_id: parseInt(activityId),
-          worker_id: workerData!.id
+          worker_id: workerData?.id || 0
         }));
       }
-    } catch (_error) {
-      console.error('Erreur lors du chargement de l\'activité:', _error);
+    } catch (error) {
+      console.error('Erreur lors du chargement de l\'activité:', error);
     }
-  };
+  }, [activityId, workerData]);
 
-  const loadChecklist = async () => {
+  const loadChecklist = useCallback(async () => {
+    if (!activityId || !workerData) return;
+    
     try {
-      const response = await fetch(`/api/activities/${activityId}/checklist/${workerData!.id}`);
+      const response = await fetch(`/api/activities/${activityId}/checklist?workerId=${workerData.id}`);
       const data = await response.json();
       if (data.success && data.checklist) {
         setChecklist(data.checklist);
       }
-    } catch (_error) {
-      console.error('Erreur lors du chargement de la feuille de route:', _error);
+    } catch (error) {
+      console.error('Erreur lors du chargement de la feuille de route:', error);
     }
-  };
+  }, [activityId, workerData]);
+
+  // Charger les données quand les dépendances sont disponibles
+  useEffect(() => {
+    if (workerData && activityId) {
+      loadActivity();
+      loadChecklist();
+    }
+  }, [workerData, activityId, loadActivity, loadChecklist]);
 
   const saveChecklist = async () => {
+    if (!workerData || !activityId) return;
+    
     setSaving(true);
     setMessage('');
     
@@ -128,7 +136,7 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          workerId: workerData!.id,
+          workerId: workerData.id,
           departureCheck: checklist.departure_check,
           returnCheck: checklist.return_check,
           comments: checklist.comments
@@ -147,7 +155,7 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
       } else {
         setMessage('❌ Erreur lors de la sauvegarde : ' + data.message);
       }
-    } catch (_error) {
+    } catch (error) {
       setMessage('❌ Erreur lors de la sauvegarde');
     } finally {
       setSaving(false);
@@ -156,14 +164,6 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
-      timeZone: 'Europe/Paris'
-    });
-  };
-
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit',
       timeZone: 'Europe/Paris'
     });
   };
@@ -180,7 +180,13 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
   }
 
   if (!workerData || !activity) {
-    return null;
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600">{message || 'Données non disponibles'}</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -189,12 +195,6 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
       <div className="bg-white shadow-sm border-b px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <button
-              onClick={() => router.push('/workers/dashboard')}
-              className="mr-3 text-gray-600 hover:text-gray-800"
-            >
-              ←
-            </button>
             <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center mr-3">
               <span className="text-white text-sm font-bold">AMH</span>
             </div>
@@ -203,10 +203,16 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
               <p className="text-sm text-gray-600">{workerData.name}</p>
             </div>
           </div>
+          <button
+            onClick={() => router.push('/workers/dashboard')}
+            className="text-gray-600 hover:text-gray-800 text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-50"
+          >
+            ← Retour
+          </button>
         </div>
       </div>
-      
-      <div className="p-4">
+
+      <div className="p-4 pb-24">
         {/* En-tête */}
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
@@ -218,12 +224,8 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
         </div>
 
         {message && (
-          <div className={`mb-4 rounded-xl p-4 ${
-            message.includes('✅') 
-              ? 'bg-green-50 border border-green-200 text-green-800' 
-              : 'bg-red-50 border border-red-200 text-red-800'
-          }`}>
-            <p className="text-sm">{message}</p>
+          <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <p className="text-blue-800 text-sm">{message}</p>
           </div>
         )}
 
@@ -243,93 +245,89 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
           )}
         </div>
 
-        {/* Formulaire de la feuille de route */}
-        <div className="bg-white rounded-2xl shadow-sm p-4 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Vérifications</h2>
-          
-          <div className="space-y-4">
-            {/* Vérification du départ */}
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-              <div className="flex items-center space-x-3">
-                <span className="text-2xl">🚌</span>
-                <div>
-                  <h3 className="font-medium text-gray-900">Départ vérifié</h3>
-                  <p className="text-sm text-gray-600">Tous les enfants sont présents au départ</p>
-                </div>
+        {/* Formulaire de checklist */}
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">
+            Checklist de l&apos;activité
+          </h2>
+
+          <div className="space-y-6">
+            {/* Départ */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-medium text-gray-900">🚌 Départ</h3>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="departureCheck"
+                  checked={checklist.departure_check}
+                  onChange={(e) => setChecklist(prev => ({ ...prev, departure_check: e.target.checked }))}
+                  className="w-5 h-5 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+                />
+                <label htmlFor="departureCheck" className="ml-3 text-gray-700">
+                  J&apos;ai bien effectué le départ avec tous les participants
+                </label>
               </div>
-              <button
-                onClick={() => setChecklist(prev => ({ ...prev, departure_check: !prev.departure_check }))}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                  checklist.departure_check 
-                    ? 'bg-green-500 text-white' 
-                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                }`}
-              >
-                {checklist.departure_check ? '✓' : '○'}
-              </button>
             </div>
 
-            {/* Vérification du retour */}
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-              <div className="flex items-center space-x-3">
-                <span className="text-2xl">🏠</span>
-                <div>
-                  <h3 className="font-medium text-gray-900">Retour vérifié</h3>
-                  <p className="text-sm text-gray-600">Tous les enfants sont rentrés sains et saufs</p>
-                </div>
+            {/* Retour */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-medium text-gray-900">🏠 Retour</h3>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="returnCheck"
+                  checked={checklist.return_check}
+                  onChange={(e) => setChecklist(prev => ({ ...prev, return_check: e.target.checked }))}
+                  className="w-5 h-5 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+                />
+                <label htmlFor="returnCheck" className="ml-3 text-gray-700">
+                  J&apos;ai bien effectué le retour avec tous les participants
+                </label>
               </div>
+            </div>
+
+            {/* Commentaires */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-medium text-gray-900">💬 Commentaires</h3>
+              <textarea
+                value={checklist.comments || ''}
+                onChange={(e) => setChecklist(prev => ({ ...prev, comments: e.target.value }))}
+                placeholder="Ajoutez des commentaires sur l'activité (optionnel)"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                rows={4}
+              />
+            </div>
+
+            {/* Bouton de sauvegarde */}
+            <div className="pt-4">
               <button
-                onClick={() => setChecklist(prev => ({ ...prev, return_check: !prev.return_check }))}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                  checklist.return_check 
-                    ? 'bg-green-500 text-white' 
-                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                }`}
+                onClick={saveChecklist}
+                disabled={saving}
+                className="w-full bg-green-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {checklist.return_check ? '✓' : '○'}
+                {saving ? 'Sauvegarde...' : 'Sauvegarder ma feuille de route'}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Commentaires */}
-        <div className="bg-white rounded-2xl shadow-sm p-4 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Commentaires</h2>
-          <textarea
-            value={checklist.comments || ''}
-            onChange={(e) => setChecklist(prev => ({ ...prev, comments: e.target.value }))}
-            placeholder="Ajoutez vos commentaires, remarques ou observations sur cette activité..."
-            className="w-full p-3 border border-gray-300 rounded-xl resize-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            rows={4}
-          />
-        </div>
-
-        {/* Dernière mise à jour */}
-        {checklist.last_updated && (
-          <div className="bg-blue-50 rounded-xl p-3 mb-6">
-            <p className="text-sm text-blue-800">
-              📝 Dernière mise à jour : {formatDate(checklist.last_updated)} à {formatTime(checklist.last_updated)}
-            </p>
+        {/* Statut de la checklist */}
+        {checklist.id && (
+          <div className="mt-6 bg-white rounded-2xl shadow-sm p-4 border-l-4 border-green-500">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">✅ Feuille de route complétée</h3>
+            <div className="space-y-2 text-sm text-gray-600">
+              <div>Dernière mise à jour : {checklist.last_updated ? new Date(checklist.last_updated).toLocaleString('fr-FR') : 'Maintenant'}</div>
+              <div>Départ : {checklist.departure_check ? '✅ Effectué' : '❌ Non effectué'}</div>
+              <div>Retour : {checklist.return_check ? '✅ Effectué' : '❌ Non effectué'}</div>
+              {checklist.comments && (
+                <div>
+                  <strong>Commentaires :</strong>
+                  <p className="mt-1">{checklist.comments}</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
-
-        {/* Bouton de sauvegarde */}
-        <div className="space-y-3">
-          <button
-            onClick={saveChecklist}
-            disabled={saving}
-            className="w-full bg-green-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? '💾 Sauvegarde...' : '💾 Sauvegarder ma feuille de route'}
-          </button>
-          
-          <button
-            onClick={() => router.push('/workers/dashboard')}
-            className="w-full bg-gray-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-gray-700 transition-colors"
-          >
-            ← Retour au dashboard
-          </button>
-        </div>
       </div>
     </div>
   );
