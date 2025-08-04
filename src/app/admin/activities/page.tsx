@@ -455,9 +455,12 @@ export default function ActivitiesPage() {
                      >
                        👥 Attribuer
                      </Link>
-                     <button className="flex-1 bg-green-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
+                     <Link
+                       href={`/admin/activities/${activity.id}/checklist`}
+                       className="flex-1 bg-green-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors text-center"
+                     >
                        📋 Feuilles
-                     </button>
+                     </Link>
                    </div>
                 </div>
               </div>
