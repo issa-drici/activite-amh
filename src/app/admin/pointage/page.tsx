@@ -76,6 +76,8 @@ export default function PointagePage() {
       return;
     }
 
+    console.log('Tentative d\'enregistrement pour le QR code:', qrCode);
+
     try {
       const response = await fetch('/api/attendance', {
         method: 'POST',
@@ -89,6 +91,8 @@ export default function PointagePage() {
       });
 
       const data = await response.json();
+      console.log('Réponse du serveur:', data);
+
       if (data.success) {
         setMessage(`✅ Présence enregistrée : ${data.worker} (${data.period})`);
         loadAttendance();
@@ -96,11 +100,12 @@ export default function PointagePage() {
         setTimeout(() => setMessage(''), 3000);
       } else {
         setMessage(`❌ ${data.message || 'Erreur lors de l\'enregistrement'}`);
-        setTimeout(() => setMessage(''), 3000);
+        setTimeout(() => setMessage(''), 5000);
       }
-    } catch {
+    } catch (error) {
+      console.error('Erreur lors de l\'enregistrement:', error);
       setMessage('❌ Erreur de connexion au serveur');
-      setTimeout(() => setMessage(''), 3000);
+      setTimeout(() => setMessage(''), 5000);
     }
   };
 
