@@ -37,11 +37,12 @@ export async function POST(request: NextRequest) {
       endTime,
       maxParticipants,
       transportMode,
+      category,
       createdBy
     } = await request.json();
     
     // Validation des données
-    if (!title || !location || !date || !startTime || !endTime || !maxParticipants || !transportMode || !createdBy) {
+    if (!title || !location || !date || !startTime || !endTime || !maxParticipants || !transportMode || !category || !createdBy) {
       return NextResponse.json(
         { success: false, message: 'Tous les champs obligatoires doivent être remplis' },
         { status: 400 }
@@ -57,6 +58,7 @@ export async function POST(request: NextRequest) {
       endTime,
       maxParticipants,
       transportMode,
+      category,
       createdBy
     );
     

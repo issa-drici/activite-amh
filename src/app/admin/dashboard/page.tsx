@@ -1,24 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import QRScanner from '@/components/QRScanner';
-
-interface Worker {
-  id: number;
-  name: string;
-  username: string;
-  qr_code: string;
-  created_at: string;
-}
-
-interface Attendance {
-  name: string;
-  period: string;
-  created_at: string;
-  admin_name: string;
-}
+import AdminNavigation from '@/components/AdminNavigation';
 
 interface AdminData {
   id: number;
@@ -27,42 +11,9 @@ interface AdminData {
 }
 
 export default function AdminDashboard() {
-  const [workers, setWorkers] = useState<Worker[]>([]);
-  const [attendance, setAttendance] = useState<Attendance[]>([]);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [newWorkerName, setNewWorkerName] = useState('');
-  const [newWorkerUsername, setNewWorkerUsername] = useState('');
-  const [newWorkerPassword, setNewWorkerPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [showScanner, setShowScanner] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState<'morning' | 'afternoon'>('morning');
   const [adminData, setAdminData] = useState<AdminData | null>(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
-
-  const loadWorkers = useCallback(async () => {
-    try {
-      const response = await fetch('/api/workers');
-      const data = await response.json();
-      if (data.success) {
-        setWorkers(data.workers);
-      }
-    } catch (_error) {
-      console.error('Erreur lors du chargement des travailleurs:', _error);
-    }
-  }, []);
-
-  const loadAttendance = useCallback(async () => {
-    try {
-      const response = await fetch(`/api/attendance?date=${selectedDate}`);
-      const data = await response.json();
-      if (data.success) {
-        setAttendance(data.attendance);
-      }
-    } catch (_error) {
-      console.error('Erreur lors du chargement des présences:', _error);
-    }
-  }, [selectedDate]);
 
   useEffect(() => {
     // Vérifier si l'admin est connecté
@@ -79,386 +30,142 @@ export default function AdminDashboard() {
       try {
         const adminInfo = JSON.parse(userData);
         setAdminData(adminInfo);
-          } catch (_error) {
-      console.error('Erreur lors du parsing des données admin:', _error);
-      router.push('/admin/login');
-      return;
-    }
-    }
-
-    loadWorkers();
-    loadAttendance();
-  }, [router, loadWorkers, loadAttendance]);
-
-
-
-  const createWorker = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newWorkerName.trim() || !newWorkerUsername.trim() || !newWorkerPassword.trim()) {
-      setMessage('Tous les champs sont requis');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await fetch('/api/workers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          name: newWorkerName,
-          username: newWorkerUsername,
-          password: newWorkerPassword
-        }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setNewWorkerName('');
-        setNewWorkerUsername('');
-        setNewWorkerPassword('');
-        setMessage('Travailleur créé avec succès !');
-        loadWorkers();
-        setTimeout(() => setMessage(''), 3000);
-      } else {
-        setMessage(data.message || 'Erreur lors de la création');
+      } catch (_error) {
+        console.error('Erreur lors du parsing des données admin:', _error);
+        router.push('/admin/login');
+        return;
       }
-    } catch {
-      setMessage('Erreur de connexion au serveur');
-    } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
 
-  const handleQRScan = async (qrCode: string) => {
-    if (!adminData) {
-      setMessage('Erreur: données admin non disponibles');
-      return;
-    }
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
 
-    try {
-      const response = await fetch('/api/attendance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          qrCode,
-          date: selectedDate,
-          period: selectedPeriod,
-          adminId: adminData.id,
-        }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setMessage(`Présence enregistrée : ${data.worker} (${data.period})`);
-        loadAttendance();
-        setShowScanner(false);
-      } else {
-        setMessage(data.message || 'Erreur lors de l&apos;enregistrement');
-      }
-    } catch {
-      setMessage('Erreur de connexion au serveur');
-    }
-  };
-
-  const logout = () => {
-    localStorage.removeItem('userLoggedIn');
-    localStorage.removeItem('userType');
-    localStorage.removeItem('userData');
-    router.push('/admin/login');
-  };
-
-  const exportAttendanceCSV = async () => {
-    try {
-      const response = await fetch('/api/export-attendance');
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `presences_${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        setMessage('Export CSV réussi !');
-        setTimeout(() => setMessage(''), 3000);
-      } else {
-        setMessage('Erreur lors de l\'export CSV');
-        setTimeout(() => setMessage(''), 3000);
-      }
-    } catch (error) {
-      console.error('Erreur lors de l\'export CSV:', error);
-      setMessage('Erreur lors de l\'export CSV');
-      setTimeout(() => setMessage(''), 3000);
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      timeZone: 'Europe/Paris'
-    });
-  };
+  if (!adminData) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header Mobile */}
-      <div className="bg-white shadow-sm border-b px-4 py-3">
-        <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-              <div className="w-10 h-10 bg-green-600 rounded-xl flex items-center justify-center mr-3">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V6a1 1 0 00-1-1H5a1 1 0 00-1 1v1a1 1 0 001 1zm12 0h2a1 1 0 001-1V6a1 1 0 00-1-1h-2a1 1 0 00-1 1v1a1 1 0 001 1zM5 20h2a1 1 0 001-1v-1a1 1 0 00-1-1H5a1 1 0 00-1 1v1a1 1 0 001 1z" />
-                </svg>
-              </div>
-                          <div>
-              <h1 className="text-lg font-semibold text-gray-900">Activités AMH Été 2025</h1>
-              <p className="text-sm text-gray-600">{adminData?.name || 'Admin'} - Pointage</p>
-            </div>
-            </div>
-          <div className="flex items-center space-x-3">
-            <Link
-              href="/"
-              className="text-gray-600 hover:text-gray-900 text-sm"
-            >
-              Accueil
-            </Link>
-            <button
-              onClick={logout}
-              className="text-red-600 hover:text-red-800 text-sm font-medium"
-            >
-              Déconnexion
-            </button>
-          </div>
+      <AdminNavigation />
+      
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* En-tête */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Bienvenue, {adminData.name} !
+          </h1>
+          <p className="text-lg text-gray-600">
+            Gestion des activités AMH Été 2025
+          </p>
         </div>
-      </div>
 
-      <div className="p-4 space-y-6">
-        {message && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <p className="text-blue-800 text-sm">{message}</p>
-          </div>
-        )}
-
-        {/* Section Pointage - FONCTIONNALITÉ PRINCIPALE */}
-        <div className="bg-white rounded-2xl shadow-sm p-6">
-          <div className="flex items-center mb-6">
-            <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center mr-4">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V6a1 1 0 00-1-1H5a1 1 0 00-1 1v1a1 1 0 001 1zm12 0h2a1 1 0 001-1V6a1 1 0 00-1-1h-2a1 1 0 00-1 1v1a1 1 0 001 1zM5 20h2a1 1 0 001-1v-1a1 1 0 00-1-1H5a1 1 0 00-1 1v1a1 1 0 001 1z" />
-              </svg>
-            </div>
-            <div>
-                        <h2 className="text-xl font-bold text-gray-900">Scanner Présence</h2>
-          <p className="text-sm text-gray-600">Pointage des animateurs</p>
-            </div>
-          </div>
-          
-          <div className="space-y-4 mb-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Date du pointage
-              </label>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => {
-                  setSelectedPeriod('morning');
-                  setShowScanner(true);
-                }}
-                className="py-4 px-6 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors text-lg"
-              >
-                📱 Scanner - Matin
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedPeriod('afternoon');
-                  setShowScanner(true);
-                }}
-                className="py-4 px-6 bg-orange-600 text-white rounded-xl font-semibold hover:bg-orange-700 transition-colors text-lg"
-              >
-                📱 Scanner - Après-midi
-              </button>
-            </div>
-          </div>
-
-          {showScanner && (
-            <div className="mb-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
-                <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                  Scanner QR Code - {selectedPeriod === 'morning' ? 'Matin' : 'Après-midi'}
-                </h3>
-                <p className="text-blue-800 text-sm">
-                  Présentez le QR code de l&apos;animateur devant la caméra
-                </p>
+        {/* Cartes d'action principales */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Pointage */}
+          <div className="bg-white rounded-2xl shadow-sm p-6 border-l-4 border-green-500">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">📱</span>
               </div>
-              <QRScanner
-                onScan={handleQRScan}
-                onError={(error) => setMessage(`Erreur scanner: ${error}`)}
-              />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Pointage</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Scanner les QR codes des animateurs pour enregistrer leurs présences
+              </p>
               <button
-                onClick={() => setShowScanner(false)}
-                className="mt-3 w-full py-3 px-4 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors font-medium"
+                onClick={() => router.push('/admin/pointage')}
+                className="w-full bg-green-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-green-700 transition-colors"
               >
-                Annuler le scan
+                Commencer le pointage
               </button>
             </div>
-          )}
+          </div>
 
-          <div className="border-t pt-4">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-semibold">
-                Présences du {formatDate(selectedDate)}
-              </h3>
+          {/* Activités */}
+          <div className="bg-white rounded-2xl shadow-sm p-6 border-l-4 border-purple-500">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">📅</span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Activités</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Créer et organiser les sorties et activités pour les enfants
+              </p>
               <button
-                onClick={exportAttendanceCSV}
-                className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                onClick={() => router.push('/admin/activities')}
+                className="w-full bg-purple-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-purple-700 transition-colors"
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Export CSV
+                Gérer les activités
               </button>
             </div>
-            <div className="space-y-2">
-              {attendance.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <p className="text-gray-500 font-medium">Aucune présence enregistrée</p>
-                  <p className="text-gray-400 text-sm mt-1">Scannez un QR code pour commencer</p>
-                </div>
-              ) : (
-                attendance.map((record, index) => (
-                  <div
-                    key={index}
-                    className="flex justify-between items-center p-4 bg-gray-50 rounded-xl"
-                  >
-                    <div>
-                      <span className="font-semibold text-gray-900">{record.name}</span>
-                      <p className="text-xs text-gray-500">Pointé par {record.admin_name}</p>
-                    </div>
-                    <span className={`text-sm font-medium px-3 py-1 rounded-full ${
-                      record.period === 'morning' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-orange-100 text-orange-800'
-                    }`}>
-                      {record.period === 'morning' ? 'Matin' : 'Après-midi'}
-                    </span>
-                  </div>
-                ))
-              )}
+          </div>
+
+          {/* Animateurs */}
+          <div className="bg-white rounded-2xl shadow-sm p-6 border-l-4 border-blue-500">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">👥</span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Animateurs</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Créer et gérer les comptes des animateurs et leurs QR codes
+              </p>
+              <button
+                onClick={() => router.push('/admin/workers')}
+                className="w-full bg-blue-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-blue-700 transition-colors"
+              >
+                Gérer les animateurs
+              </button>
+            </div>
+          </div>
+
+          {/* Rapports */}
+          <div className="bg-white rounded-2xl shadow-sm p-6 border-l-4 border-orange-500">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">📊</span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Rapports</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Exporter les données de présence et consulter les statistiques
+              </p>
+              <button
+                onClick={() => router.push('/admin/reports')}
+                className="w-full bg-orange-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-orange-700 transition-colors"
+              >
+                Voir les rapports
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Section Gestion des Animateurs - FONCTIONNALITÉ SECONDAIRE */}
-        <details className="bg-white rounded-2xl shadow-sm">
-          <summary className="p-6 cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center mr-3">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Gestion des Animateurs</h2>
-                  <p className="text-sm text-gray-600">Créer et gérer les comptes</p>
-                </div>
-              </div>
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+        {/* Informations rapides */}
+        <div className="mt-8 bg-white rounded-2xl shadow-sm p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Informations rapides</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+            <div className="p-4 bg-green-50 rounded-xl">
+              <div className="text-2xl font-bold text-green-600">📱</div>
+              <div className="text-sm text-green-800">Pointage en cours</div>
             </div>
-          </summary>
-          
-          <div className="px-6 pb-6 space-y-4">
-            <form onSubmit={createWorker} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nom complet
-                </label>
-                <input
-                  type="text"
-                  placeholder="Nom de l&apos;animateur"
-                  value={newWorkerName}
-                  onChange={(e) => setNewWorkerName(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
-                  required
-                />
-              </div>
-              
-              <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nom d&apos;utilisateur
-                  </label>
-                <input
-                  type="text"
-                  placeholder="Nom d&apos;utilisateur"
-                  value={newWorkerUsername}
-                  onChange={(e) => setNewWorkerUsername(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Mot de passe
-                </label>
-                <input
-                  type="password"
-                  placeholder="Mot de passe"
-                  value={newWorkerPassword}
-                  onChange={(e) => setNewWorkerPassword(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
-                  required
-                />
-              </div>
-              
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-blue-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
-              >
-                {loading ? 'Création...' : 'Créer l&apos;animateur'}
-              </button>
-            </form>
-
-            <div className="border-t pt-4">
-              <h3 className="text-md font-semibold mb-3">Liste des Animateurs</h3>
-              <div className="space-y-2">
-                {workers.map((worker) => (
-                  <div
-                    key={worker.id}
-                    className="flex justify-between items-center p-3 bg-gray-50 rounded-xl"
-                  >
-                    <div>
-                      <span className="font-medium text-gray-900">{worker.name}</span>
-                      <p className="text-sm text-gray-600">@{worker.username}</p>
-                    </div>
-                    <Link
-                      href={`/admin/workers/${worker.id}`}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                    >
-                      QR Code
-                    </Link>
-                  </div>
-                ))}
-              </div>
+            <div className="p-4 bg-purple-50 rounded-xl">
+              <div className="text-2xl font-bold text-purple-600">📅</div>
+              <div className="text-sm text-purple-800">Activités planifiées</div>
+            </div>
+            <div className="p-4 bg-blue-50 rounded-xl">
+              <div className="text-2xl font-bold text-blue-600">👥</div>
+              <div className="text-sm text-blue-800">Animateurs actifs</div>
             </div>
           </div>
-        </details>
+        </div>
       </div>
     </div>
   );

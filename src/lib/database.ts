@@ -178,6 +178,7 @@ interface Activity {
   end_time: string;
   max_participants: number;
   transport_mode: string;
+  category: string;
   created_by: number;
   created_at: string;
 }
@@ -214,6 +215,7 @@ function createActivityTables(): Promise<void> {
         end_time TEXT NOT NULL,
         max_participants INTEGER NOT NULL,
         transport_mode TEXT NOT NULL,
+        category TEXT NOT NULL,
         created_by INTEGER NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (created_by) REFERENCES admins (id) ON DELETE CASCADE
@@ -441,13 +443,14 @@ export function createActivity(
   endTime: string,
   maxParticipants: number,
   transportMode: string,
+  category: string,
   createdBy: number
 ): Promise<Activity> {
   return new Promise((resolve, reject) => {
     db.run(`
-      INSERT INTO activities (title, description, location, date, start_time, end_time, max_participants, transport_mode, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [title, description, location, date, startTime, endTime, maxParticipants, transportMode, createdBy], 
+      INSERT INTO activities (title, description, location, date, start_time, end_time, max_participants, transport_mode, category, created_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [title, description, location, date, startTime, endTime, maxParticipants, transportMode, category, createdBy], 
     function(err) {
       if (err) reject(err);
       else resolve({
@@ -460,6 +463,7 @@ export function createActivity(
         end_time: endTime,
         max_participants: maxParticipants,
         transport_mode: transportMode,
+        category,
         created_by: createdBy,
         created_at: new Date().toISOString()
       });
