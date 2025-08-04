@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 
 // Configuration de la base de données SQLite
-// Utiliser un répertoire persistant pour la production
+// Utiliser un répertoire persistant pour la production, local pour le développement
 const projectName = process.env.PROJECT_NAME || 'scan-pointage';
 const dbPath = process.env.NODE_ENV === 'production' 
   ? path.join('/data', projectName, 'database.sqlite')
@@ -13,7 +13,16 @@ const dbPath = process.env.NODE_ENV === 'production'
 if (process.env.NODE_ENV === 'production') {
   const dataDir = path.dirname(dbPath);
   if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
+    try {
+      fs.mkdirSync(dataDir, { recursive: true });
+    } catch (error) {
+      // Si on ne peut pas créer le dossier /data, utiliser le répertoire local
+      console.warn('⚠️ Impossible de créer le dossier /data, utilisation du répertoire local');
+      const localDbPath = path.join(process.cwd(), 'database.sqlite');
+      if (dbPath !== localDbPath) {
+        console.log(`📁 Base de données locale : ${localDbPath}`);
+      }
+    }
   }
 }
 const db = new sqlite3.Database(dbPath);
