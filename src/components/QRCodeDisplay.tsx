@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
 import { generateQrCodeUrl } from '@/lib/qr-utils';
 
 interface QRCodeDisplayProps {
@@ -21,7 +20,7 @@ export default function QRCodeDisplay({ qrCode, workerName }: QRCodeDisplayProps
       <h3 className="text-lg font-semibold text-center mb-4">{workerName}</h3>
       {qrCodeUrl ? (
         <div className="text-center">
-          <Image
+          <img
             src={qrCodeUrl}
             alt={`QR Code pour ${workerName}`}
             width={200}
