@@ -23,9 +23,9 @@ export async function POST(
       );
     }
     
-    const { workerId, departureCheck, returnCheck, comments } = await request.json();
+    const { workerId, departureCheck, returnCheck, comments, mood } = await request.json();
     
-    if (workerId === undefined || departureCheck === undefined || returnCheck === undefined) {
+    if (workerId === undefined || departureCheck === undefined || returnCheck === undefined || !comments || !mood) {
       return NextResponse.json(
         { success: false, message: 'Tous les champs sont requis' },
         { status: 400 }
@@ -37,7 +37,8 @@ export async function POST(
       workerId,
       departureCheck,
       returnCheck,
-      comments || ''
+      comments,
+      mood
     );
     
     return NextResponse.json({

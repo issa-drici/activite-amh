@@ -196,7 +196,8 @@ interface ActivityChecklist {
   worker_id: number;
   departure_check: boolean;
   return_check: boolean;
-  comments?: string;
+  comments: string;
+  mood: 'happy' | 'neutral' | 'sad';
   last_updated: string;
 }
 
@@ -255,7 +256,8 @@ function createActivityTables(): Promise<void> {
             worker_id INTEGER NOT NULL,
             departure_check BOOLEAN DEFAULT FALSE,
             return_check BOOLEAN DEFAULT FALSE,
-            comments TEXT,
+            comments TEXT NOT NULL,
+            mood TEXT NOT NULL DEFAULT 'neutral',
             last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (activity_id) REFERENCES activities (id) ON DELETE CASCADE,
             FOREIGN KEY (worker_id) REFERENCES workers (id) ON DELETE CASCADE,
@@ -553,13 +555,14 @@ export function updateActivityChecklist(
   workerId: number,
   departureCheck: boolean,
   returnCheck: boolean,
-  comments: string
+  comments: string,
+  mood: 'happy' | 'neutral' | 'sad'
 ): Promise<ActivityChecklist> {
   return new Promise((resolve, reject) => {
     db.run(`
-      INSERT OR REPLACE INTO activity_checklists (activity_id, worker_id, departure_check, return_check, comments, last_updated)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `, [activityId, workerId, departureCheck, returnCheck, comments, new Date().toISOString()], 
+      INSERT OR REPLACE INTO activity_checklists (activity_id, worker_id, departure_check, return_check, comments, mood, last_updated)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [activityId, workerId, departureCheck, returnCheck, comments, mood, new Date().toISOString()], 
     function(err) {
       if (err) reject(err);
       else resolve({
@@ -569,6 +572,7 @@ export function updateActivityChecklist(
         departure_check: departureCheck,
         return_check: returnCheck,
         comments,
+        mood,
         last_updated: new Date().toISOString()
       });
     });

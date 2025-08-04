@@ -36,7 +36,8 @@ interface Checklist {
   worker_id: number;
   departure_check: boolean;
   return_check: boolean;
-  comments?: string;
+  comments: string;
+  mood: 'happy' | 'neutral' | 'sad';
   last_updated: string;
   worker_name: string;
 }
@@ -277,12 +278,19 @@ export default function ActivityChecklistPage({ params }: { params: Promise<{ id
                           </div>
                         </div>
                         
-                        {checklist.comments && (
-                          <div className="bg-gray-50 rounded-xl p-3">
-                            <h4 className="text-sm font-medium text-gray-900 mb-2">Commentaires :</h4>
-                            <p className="text-sm text-gray-700 whitespace-pre-wrap">{checklist.comments}</p>
+                        <div className="bg-gray-50 rounded-xl p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-sm font-medium text-gray-900">Commentaires :</h4>
+                            <div className="text-sm text-gray-600">
+                              Ressenti : {
+                                checklist.mood === 'happy' ? '😊 Heureux' :
+                                checklist.mood === 'neutral' ? '😐 Moyen' :
+                                '😔 Triste'
+                              }
+                            </div>
                           </div>
-                        )}
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap">{checklist.comments}</p>
+                        </div>
                         
                         <div className="text-xs text-gray-500">
                           Dernière mise à jour : {formatDate(checklist.last_updated)} à {formatTime(checklist.last_updated)}

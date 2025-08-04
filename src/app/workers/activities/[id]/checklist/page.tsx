@@ -29,7 +29,8 @@ interface Checklist {
   worker_id: number;
   departure_check: boolean;
   return_check: boolean;
-  comments?: string;
+  comments: string;
+  mood: 'happy' | 'neutral' | 'sad';
   last_updated?: string;
 }
 
@@ -41,7 +42,8 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
     worker_id: 0,
     departure_check: false,
     return_check: false,
-    comments: ''
+    comments: '',
+    mood: 'neutral'
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -126,6 +128,12 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
   const saveChecklist = async () => {
     if (!workerData || !activityId) return;
     
+    // Validation des champs obligatoires
+    if (!checklist.comments.trim()) {
+      setMessage('❌ Les commentaires sont obligatoires');
+      return;
+    }
+    
     setSaving(true);
     setMessage('');
     
@@ -139,7 +147,8 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
           workerId: workerData.id,
           departureCheck: checklist.departure_check,
           returnCheck: checklist.return_check,
-          comments: checklist.comments
+          comments: checklist.comments,
+          mood: checklist.mood
         }),
       });
 
@@ -286,15 +295,59 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
               </div>
             </div>
 
+            {/* Ressenti de la journée */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-medium text-gray-900">😊 Ressenti de la journée</h3>
+              <div className="flex space-x-4">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="mood"
+                    value="happy"
+                    checked={checklist.mood === 'happy'}
+                    onChange={(e) => setChecklist(prev => ({ ...prev, mood: e.target.value as 'happy' | 'neutral' | 'sad' }))}
+                    className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
+                  />
+                  <span className="text-2xl">😊</span>
+                  <span className="text-sm text-gray-700">Heureux</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="mood"
+                    value="neutral"
+                    checked={checklist.mood === 'neutral'}
+                    onChange={(e) => setChecklist(prev => ({ ...prev, mood: e.target.value as 'happy' | 'neutral' | 'sad' }))}
+                    className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
+                  />
+                  <span className="text-2xl">😐</span>
+                  <span className="text-sm text-gray-700">Moyen</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="mood"
+                    value="sad"
+                    checked={checklist.mood === 'sad'}
+                    onChange={(e) => setChecklist(prev => ({ ...prev, mood: e.target.value as 'happy' | 'neutral' | 'sad' }))}
+                    className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
+                  />
+                  <span className="text-2xl">😔</span>
+                  <span className="text-sm text-gray-700">Triste</span>
+                </label>
+              </div>
+            </div>
+
             {/* Commentaires */}
             <div className="space-y-3">
-              <h3 className="text-lg font-medium text-gray-900">💬 Commentaires</h3>
+              <h3 className="text-lg font-medium text-gray-900">💬 Commentaires *</h3>
               <textarea
-                value={checklist.comments || ''}
+                value={checklist.comments}
                 onChange={(e) => setChecklist(prev => ({ ...prev, comments: e.target.value }))}
-                placeholder="Ajoutez des commentaires sur l'activité (optionnel)"
+                placeholder="Ajoutez des commentaires sur l'activité (obligatoire)"
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
                 rows={4}
+                required
               />
             </div>
 
@@ -319,12 +372,15 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
               <div>Dernière mise à jour : {checklist.last_updated ? new Date(checklist.last_updated).toLocaleString('fr-FR') : 'Maintenant'}</div>
               <div>Départ : {checklist.departure_check ? '✅ Effectué' : '❌ Non effectué'}</div>
               <div>Retour : {checklist.return_check ? '✅ Effectué' : '❌ Non effectué'}</div>
-              {checklist.comments && (
-                <div>
-                  <strong>Commentaires :</strong>
-                  <p className="mt-1 whitespace-pre-wrap">{checklist.comments}</p>
-                </div>
-              )}
+              <div>Ressenti : {
+                checklist.mood === 'happy' ? '😊 Heureux' :
+                checklist.mood === 'neutral' ? '😐 Moyen' :
+                '😔 Triste'
+              }</div>
+              <div>
+                <strong>Commentaires :</strong>
+                <p className="mt-1 whitespace-pre-wrap">{checklist.comments}</p>
+              </div>
             </div>
           </div>
         )}
