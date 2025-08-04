@@ -11,7 +11,6 @@ interface QRScannerProps {
 export default function QRScanner({ onScan, onError }: QRScannerProps) {
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const [isScanning, setIsScanning] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
   const [scanResult, setScanResult] = useState<string | null>(null);
 
   const handleScan = useCallback((decodedText: string) => {
@@ -57,14 +56,39 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
       scannerRef.current = null;
     }
     
-    // Réinitialiser après un court délai
+    // Réinitialiser immédiatement
     setTimeout(() => {
-      setIsInitialized(false);
+      if (!scannerRef.current) {
+        try {
+          scannerRef.current = new Html5QrcodeScanner(
+            'qr-reader',
+            {
+              fps: 10,
+              qrbox: { width: 250, height: 250 },
+              aspectRatio: 1.0,
+              supportedScanTypes: [
+                Html5QrcodeScanType.SCAN_TYPE_CAMERA
+              ],
+              formatsToSupport: [
+                Html5QrcodeSupportedFormats.QR_CODE
+              ],
+              rememberLastUsedCamera: true,
+              showTorchButtonIfSupported: true,
+              showZoomSliderIfSupported: true
+            },
+            false
+          );
+
+          scannerRef.current.render(handleScan, handleError);
+        } catch (error) {
+          console.error('Erreur lors de la réinitialisation du scanner:', error);
+        }
+      }
     }, 100);
-  }, []);
+  }, [handleScan, handleError]);
 
   useEffect(() => {
-    if (isInitialized || scannerRef.current) return;
+    if (scannerRef.current) return;
 
     try {
       scannerRef.current = new Html5QrcodeScanner(
@@ -87,7 +111,6 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
       );
 
       scannerRef.current.render(handleScan, handleError);
-      setIsInitialized(true);
     } catch (error) {
       console.error('Erreur lors de l\'initialisation du scanner:', error);
       if (onError) {
@@ -105,7 +128,7 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
         scannerRef.current = null;
       }
     };
-  }, [handleScan, handleError, onError, isInitialized]);
+  }, [handleScan, handleError, onError]);
 
   return (
     <div className="w-full max-w-md mx-auto">
