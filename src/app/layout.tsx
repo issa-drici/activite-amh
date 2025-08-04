@@ -1,17 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import dynamic from 'next/dynamic'
-
-const PWAInstall = dynamic(() => import('@/components/PWAInstall'), {
-  ssr: false,
-  loading: () => null
-})
-
-const UpdateNotification = dynamic(() => import('@/components/UpdateNotification'), {
-  ssr: false,
-  loading: () => null
-})
+import PWAWrapper from '@/components/PWAWrapper'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -69,8 +59,7 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         {children}
-        <PWAInstall />
-        <UpdateNotification />
+        <PWAWrapper />
       </body>
     </html>
   )
