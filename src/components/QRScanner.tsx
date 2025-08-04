@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5QrcodeScanner, Html5QrcodeScanType, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 
 interface QRScannerProps {
   onScan: (qrCode: string) => void;
@@ -20,6 +20,15 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
           fps: 10,
           qrbox: { width: 250, height: 250 },
           aspectRatio: 1.0,
+          supportedScanTypes: [
+            Html5QrcodeScanType.SCAN_TYPE_CAMERA
+          ],
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.QR_CODE
+          ],
+          rememberLastUsedCamera: true,
+          showTorchButtonIfSupported: true,
+          showZoomSliderIfSupported: true
         },
         false
       );
@@ -31,8 +40,19 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
           onScan(decodedText);
         },
         (error) => {
-          if (onError) {
-            onError(error);
+          console.log('Erreur de scan QR:', error);
+          // Ne pas afficher les erreurs de permission ou de caméra non disponible
+          if (error.includes('Permission') || error.includes('NotAllowedError') || error.includes('NotFoundError')) {
+            if (onError) {
+              onError('Veuillez autoriser l\'accès à la caméra pour scanner les QR codes');
+            }
+          } else if (error.includes('No MultiFormat Readers')) {
+            // Erreur normale quand aucun QR code n'est détecté
+            console.log('Aucun QR code détecté pour le moment');
+          } else {
+            if (onError) {
+              onError(`Erreur de scan: ${error}`);
+            }
           }
         }
       );
