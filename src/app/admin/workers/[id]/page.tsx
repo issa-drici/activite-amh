@@ -72,7 +72,9 @@ function WorkerDetailClient({ params }: { params: Promise<{ id: string }> }) {
   }, [router, loadWorkerData, workerId]);
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR');
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      timeZone: 'Europe/Paris'
+    });
   };
 
   const formatPeriod = (period: string) => {
@@ -192,7 +194,8 @@ function WorkerDetailClient({ params }: { params: Promise<{ id: string }> }) {
                       <span className="text-xs text-gray-500">
                         {new Date(record.created_at).toLocaleTimeString('fr-FR', {
                           hour: '2-digit',
-                          minute: '2-digit'
+                          minute: '2-digit',
+                          timeZone: 'Europe/Paris'
                         })}
                       </span>
                     </div>

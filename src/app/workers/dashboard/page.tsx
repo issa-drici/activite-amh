@@ -72,7 +72,9 @@ export default function WorkerDashboard() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR');
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      timeZone: 'Europe/Paris'
+    });
   };
 
   const formatPeriod = (period: string) => {
@@ -192,7 +194,8 @@ export default function WorkerDashboard() {
                   <div className="text-xs text-gray-500">
                     {new Date(record.created_at).toLocaleTimeString('fr-FR', {
                       hour: '2-digit',
-                      minute: '2-digit'
+                      minute: '2-digit',
+                      timeZone: 'Europe/Paris'
                     })}
                   </div>
                 </div>
