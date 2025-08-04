@@ -1,8 +1,17 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import PWAInstall from '@/components/PWAInstall'
-import UpdateNotification from '@/components/UpdateNotification'
+import dynamic from 'next/dynamic'
+
+const PWAInstall = dynamic(() => import('@/components/PWAInstall'), {
+  ssr: false,
+  loading: () => null
+})
+
+const UpdateNotification = dynamic(() => import('@/components/UpdateNotification'), {
+  ssr: false,
+  loading: () => null
+})
 
 const inter = Inter({ subsets: ['latin'] })
 
