@@ -3,13 +3,26 @@ import path from 'path';
 import fs from 'fs';
 
 // Configuration de la base de données SQLite
-const dbPath = path.join(process.cwd(), 'database.sqlite');
+// Utiliser un répertoire persistant pour la production
+const projectName = process.env.PROJECT_NAME || 'scan-pointage';
+const dbPath = process.env.NODE_ENV === 'production' 
+  ? path.join('/data', projectName, 'database.sqlite')
+  : path.join(process.cwd(), 'database.sqlite');
+
+// Créer le répertoire /data/{projectName} s'il n'existe pas (en production)
+if (process.env.NODE_ENV === 'production') {
+  const dataDir = path.dirname(dbPath);
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+}
 const db = new sqlite3.Database(dbPath);
 
 // Log de la configuration
 console.log('Configuration SQLite:', {
   dbPath,
-  exists: fs.existsSync(dbPath)
+  exists: fs.existsSync(dbPath),
+  nodeEnv: process.env.NODE_ENV
 });
 
 // Initialiser la base de données
