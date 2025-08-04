@@ -322,7 +322,7 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
               {checklist.comments && (
                 <div>
                   <strong>Commentaires :</strong>
-                  <p className="mt-1">{checklist.comments}</p>
+                  <p className="mt-1 whitespace-pre-wrap">{checklist.comments}</p>
                 </div>
               )}
             </div>

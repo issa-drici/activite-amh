@@ -280,7 +280,7 @@ export default function ActivityChecklistPage({ params }: { params: Promise<{ id
                         {checklist.comments && (
                           <div className="bg-gray-50 rounded-xl p-3">
                             <h4 className="text-sm font-medium text-gray-900 mb-2">Commentaires :</h4>
-                            <p className="text-sm text-gray-700">{checklist.comments}</p>
+                            <p className="text-sm text-gray-700 whitespace-pre-wrap">{checklist.comments}</p>
                           </div>
                         )}
                         
