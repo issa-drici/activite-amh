@@ -1,0 +1,324 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+interface WorkerData {
+  id: number;
+  name: string;
+  username: string;
+  qr_code: string;
+}
+
+interface Activity {
+  id: number;
+  title: string;
+  description?: string;
+  location: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  max_participants: number;
+  transport_mode: string;
+  category: string;
+}
+
+interface Checklist {
+  id: number;
+  activity_id: number;
+  worker_id: number;
+  departure_check: boolean;
+  return_check: boolean;
+  comments: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export default function WorkerChecklistPage({ params }: { params: Promise<{ id: string }> }) {
+  const [workerData, setWorkerData] = useState<WorkerData | null>(null);
+  const [activity, setActivity] = useState<Activity | null>(null);
+  const [checklist, setChecklist] = useState<Checklist | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+  const router = useRouter();
+
+  const [formData, setFormData] = useState({
+    departureCheck: false,
+    returnCheck: false,
+    comments: ''
+  });
+
+  useEffect(() => {
+    // Vérifier si l'animateur est connecté
+    if (typeof window !== 'undefined') {
+      const userLoggedIn = localStorage.getItem('userLoggedIn');
+      const userType = localStorage.getItem('userType');
+      const userData = localStorage.getItem('userData');
+      
+      if (!userLoggedIn || userType !== 'worker' || !userData) {
+        router.push('/workers/login');
+        return;
+      }
+
+      try {
+        const workerInfo = JSON.parse(userData);
+        setWorkerData(workerInfo);
+      } catch (_error) {
+        console.error('Erreur lors du parsing des données animateur:', _error);
+        router.push('/workers/login');
+        return;
+      }
+    }
+  }, [router]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      if (!workerData) return;
+      
+      try {
+        const { id } = await params;
+        
+        // Charger les détails de l'activité
+        const activityResponse = await fetch(`/api/activities/${id}`);
+        const activityData = await activityResponse.json();
+        
+        if (activityData.success) {
+          setActivity(activityData.activity);
+        } else {
+          setMessage('Activité non trouvée');
+          return;
+        }
+
+        // Charger la checklist existante
+        const checklistResponse = await fetch(`/api/activities/${id}/checklist?workerId=${workerData.id}`);
+        const checklistData = await checklistResponse.json();
+        
+        if (checklistData.success && checklistData.checklist) {
+          setChecklist(checklistData.checklist);
+          setFormData({
+            departureCheck: checklistData.checklist.departure_check,
+            returnCheck: checklistData.checklist.return_check,
+            comments: checklistData.checklist.comments || ''
+          });
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Erreur lors du chargement des données:', error);
+        setMessage('Erreur lors du chargement des données');
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [workerData, params]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!workerData || !activity) return;
+
+    setSaving(true);
+    setMessage('');
+
+    try {
+      const { id } = await params;
+      const response = await fetch(`/api/activities/${id}/checklist`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          workerId: workerData.id,
+          departureCheck: formData.departureCheck,
+          returnCheck: formData.returnCheck,
+          comments: formData.comments
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setMessage('Feuille de route mise à jour avec succès !');
+        setChecklist(data.checklist);
+      } else {
+        setMessage(data.message || 'Erreur lors de la sauvegarde');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      setMessage('Erreur lors de la sauvegarde');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      timeZone: 'Europe/Paris'
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!workerData || !activity) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600">{message || 'Données non disponibles'}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center mr-3">
+              <span className="text-white text-sm font-bold">AMH</span>
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold text-gray-900">Feuille de Route</h1>
+              <p className="text-sm text-gray-600">{workerData.name}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => router.push('/workers/dashboard')}
+            className="text-gray-600 hover:text-gray-800 text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-50"
+          >
+            ← Retour
+          </button>
+        </div>
+      </div>
+
+      <div className="p-4 pb-24">
+        {/* En-tête */}
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            📋 Ma Feuille de Route
+          </h1>
+          <p className="text-gray-600">
+            {activity.title}
+          </p>
+        </div>
+
+        {message && (
+          <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <p className="text-blue-800 text-sm">{message}</p>
+          </div>
+        )}
+
+        {/* Détails de l'activité */}
+        <div className="bg-white rounded-2xl shadow-sm p-4 mb-6 border-l-4 border-purple-500">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Détails de l&apos;activité</h2>
+          <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+            <div>📍 {activity.location}</div>
+            <div>📅 {formatDate(activity.date)}</div>
+            <div>🕐 {activity.start_time} - {activity.end_time}</div>
+            <div>👥 {activity.max_participants} participants</div>
+            <div>🚌 {activity.transport_mode}</div>
+            <div>👥 {activity.category}</div>
+          </div>
+          {activity.description && (
+            <p className="text-sm text-gray-600 mt-2">{activity.description}</p>
+          )}
+        </div>
+
+        {/* Formulaire de checklist */}
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">
+            Checklist de l&apos;activité
+          </h2>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Départ */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-medium text-gray-900">🚌 Départ</h3>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="departureCheck"
+                  checked={formData.departureCheck}
+                  onChange={(e) => setFormData(prev => ({ ...prev, departureCheck: e.target.checked }))}
+                  className="w-5 h-5 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+                />
+                <label htmlFor="departureCheck" className="ml-3 text-gray-700">
+                  J&apos;ai bien effectué le départ avec tous les participants
+                </label>
+              </div>
+            </div>
+
+            {/* Retour */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-medium text-gray-900">🏠 Retour</h3>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="returnCheck"
+                  checked={formData.returnCheck}
+                  onChange={(e) => setFormData(prev => ({ ...prev, returnCheck: e.target.checked }))}
+                  className="w-5 h-5 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+                />
+                <label htmlFor="returnCheck" className="ml-3 text-gray-700">
+                  J&apos;ai bien effectué le retour avec tous les participants
+                </label>
+              </div>
+            </div>
+
+            {/* Commentaires */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-medium text-gray-900">💬 Commentaires</h3>
+              <textarea
+                value={formData.comments}
+                onChange={(e) => setFormData(prev => ({ ...prev, comments: e.target.value }))}
+                placeholder="Ajoutez des commentaires sur l'activité (optionnel)"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                rows={4}
+              />
+            </div>
+
+            {/* Bouton de sauvegarde */}
+            <div className="pt-4">
+              <button
+                type="submit"
+                disabled={saving}
+                className="w-full bg-green-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving ? 'Sauvegarde...' : 'Sauvegarder ma feuille de route'}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Statut de la checklist */}
+        {checklist && (
+          <div className="mt-6 bg-white rounded-2xl shadow-sm p-4 border-l-4 border-green-500">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">✅ Feuille de route complétée</h3>
+            <div className="space-y-2 text-sm text-gray-600">
+              <div>Dernière mise à jour : {new Date(checklist.updated_at).toLocaleString('fr-FR')}</div>
+              <div>Départ : {checklist.departure_check ? '✅ Effectué' : '❌ Non effectué'}</div>
+              <div>Retour : {checklist.return_check ? '✅ Effectué' : '❌ Non effectué'}</div>
+              {checklist.comments && (
+                <div>
+                  <strong>Commentaires :</strong>
+                  <p className="mt-1">{checklist.comments}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+} 
