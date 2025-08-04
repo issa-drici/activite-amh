@@ -33,6 +33,7 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [showAllData, setShowAllData] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -64,11 +65,12 @@ export default function ReportsPage() {
       loadAttendance();
       loadActivities();
     }
-  }, [adminData, selectedDate]);
+  }, [adminData, selectedDate, showAllData]);
 
   const loadAttendance = async () => {
     try {
-      const response = await fetch(`/api/attendance?date=${selectedDate}`);
+      const url = showAllData ? '/api/attendance' : `/api/attendance?date=${selectedDate}`;
+      const response = await fetch(url);
       const data = await response.json();
       if (data.success) {
         setAttendance(data.attendance);
@@ -131,23 +133,28 @@ export default function ReportsPage() {
   };
 
   const getStats = () => {
-    const todayAttendance = attendance.filter(a => 
+    const relevantAttendance = showAllData ? attendance : attendance.filter(a => 
       new Date(a.created_at).toDateString() === new Date().toDateString()
     );
     
-    const morningCount = todayAttendance.filter(a => a.period === 'morning').length;
-    const afternoonCount = todayAttendance.filter(a => a.period === 'afternoon').length;
+    const morningCount = relevantAttendance.filter(a => a.period === 'morning').length;
+    const afternoonCount = relevantAttendance.filter(a => a.period === 'afternoon').length;
     
     const upcomingActivities = activities.filter(a => 
       new Date(a.date) >= new Date()
     );
 
+    const pastActivities = activities.filter(a => 
+      new Date(a.date) < new Date()
+    );
+
     return {
-      todayTotal: todayAttendance.length,
+      totalAttendance: relevantAttendance.length,
       morningCount,
       afternoonCount,
       totalActivities: activities.length,
-      upcomingActivities: upcomingActivities.length
+      upcomingActivities: upcomingActivities.length,
+      pastActivities: pastActivities.length
     };
   };
 
@@ -189,12 +196,57 @@ export default function ReportsPage() {
           </div>
         )}
 
+        {/* Sélecteur de données */}
+        <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">📊 Sélection des données</h2>
+          
+          <div className="space-y-4">
+            <div className="flex space-x-4">
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="radio"
+                  checked={!showAllData}
+                  onChange={() => setShowAllData(false)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">Données du jour sélectionné</span>
+              </label>
+              
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="radio"
+                  checked={showAllData}
+                  onChange={() => setShowAllData(true)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">Toutes les données</span>
+              </label>
+            </div>
+            
+            {!showAllData && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  📅 Date pour l&apos;analyse
+                </label>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Statistiques */}
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="bg-white rounded-2xl shadow-sm p-4 border-l-4 border-green-500">
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{stats.todayTotal}</div>
-              <div className="text-sm text-green-800">Présences aujourd'hui</div>
+              <div className="text-2xl font-bold text-green-600">{stats.totalAttendance}</div>
+              <div className="text-sm text-green-800">
+                {showAllData ? 'Total présences' : 'Présences du jour'}
+              </div>
             </div>
           </div>
           
@@ -220,23 +272,29 @@ export default function ReportsPage() {
           </div>
         </div>
 
+        {showAllData && (
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-white rounded-2xl shadow-sm p-4 border-l-4 border-indigo-500">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-indigo-600">{stats.upcomingActivities}</div>
+                <div className="text-sm text-indigo-800">Activités à venir</div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-2xl shadow-sm p-4 border-l-4 border-red-500">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600">{stats.pastActivities}</div>
+                <div className="text-sm text-red-800">Activités passées</div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Export CSV */}
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">📄 Export des données</h2>
           
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                📅 Date pour l'export
-              </label>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
-              />
-            </div>
-            
             <button
               onClick={exportAttendanceCSV}
               className="w-full bg-green-600 text-white py-4 px-6 rounded-xl font-medium hover:bg-green-700 transition-colors text-lg"
@@ -245,15 +303,15 @@ export default function ReportsPage() {
             </button>
             
             <p className="text-sm text-gray-600">
-              L'export inclut toutes les présences de tous les animateurs depuis le début
+              L&apos;export inclut toutes les présences de tous les animateurs depuis le début
             </p>
           </div>
         </div>
 
-        {/* Présences du jour sélectionné */}
+        {/* Présences */}
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            📋 Présences du {formatDate(selectedDate)}
+            📋 Présences {showAllData ? 'toutes périodes' : `du ${formatDate(selectedDate)}`}
           </h2>
           
           <div className="space-y-3">
@@ -263,7 +321,9 @@ export default function ReportsPage() {
                   <span className="text-xl">📱</span>
                 </div>
                 <p className="text-gray-500 font-medium">Aucune présence enregistrée</p>
-                <p className="text-gray-400 text-sm mt-1">Changez de date ou scannez des QR codes</p>
+                <p className="text-gray-400 text-sm mt-1">
+                  {showAllData ? 'Aucune donnée disponible' : 'Changez de date ou scannez des QR codes'}
+                </p>
               </div>
             ) : (
               attendance.map((record, index) => (
@@ -274,6 +334,9 @@ export default function ReportsPage() {
                   <div>
                     <span className="font-semibold text-gray-900">{record.name}</span>
                     <p className="text-xs text-gray-500">Pointé par {record.admin_name}</p>
+                    {showAllData && (
+                      <p className="text-xs text-gray-500">{formatDate(record.created_at)}</p>
+                    )}
                   </div>
                   <div className="text-right">
                     <span className={`text-sm font-medium px-3 py-1 rounded-full ${
