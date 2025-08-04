@@ -40,7 +40,8 @@ export async function POST(request: NextRequest) {
         user: {
           id: worker.id,
           name: worker.name,
-          username: worker.username
+          username: worker.username,
+          qr_code: worker.qr_code
         }
       });
     }

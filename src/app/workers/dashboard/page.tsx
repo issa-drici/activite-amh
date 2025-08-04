@@ -33,7 +33,7 @@ export default function WorkerDashboard() {
       const userData = localStorage.getItem('userData');
       
       if (!userLoggedIn || userType !== 'worker' || !userData) {
-        router.push('/login');
+        router.push('/workers/login');
         return;
       }
 
@@ -43,7 +43,7 @@ export default function WorkerDashboard() {
         loadWorkerAttendance(workerInfo.id);
       } catch (error) {
         console.error('Erreur lors du parsing des données travailleur:', error);
-        router.push('/login');
+        router.push('/workers/login');
       }
     }
   }, [router]);
@@ -68,7 +68,7 @@ export default function WorkerDashboard() {
     localStorage.removeItem('userLoggedIn');
     localStorage.removeItem('userType');
     localStorage.removeItem('userData');
-    router.push('/login');
+    router.push('/workers/login');
   };
 
   const formatDate = (dateString: string) => {

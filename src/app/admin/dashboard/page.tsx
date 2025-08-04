@@ -72,7 +72,7 @@ export default function AdminDashboard() {
       const userData = localStorage.getItem('userData');
       
       if (!userLoggedIn || userType !== 'admin' || !userData) {
-        router.push('/login');
+        router.push('/admin/login');
         return;
       }
 
@@ -81,7 +81,7 @@ export default function AdminDashboard() {
         setAdminData(adminInfo);
           } catch (_error) {
       console.error('Erreur lors du parsing des données admin:', _error);
-      router.push('/login');
+      router.push('/admin/login');
       return;
     }
     }
@@ -164,7 +164,7 @@ export default function AdminDashboard() {
     localStorage.removeItem('userLoggedIn');
     localStorage.removeItem('userType');
     localStorage.removeItem('userData');
-    router.push('/login');
+    router.push('/admin/login');
   };
 
   const formatDate = (dateString: string) => {
