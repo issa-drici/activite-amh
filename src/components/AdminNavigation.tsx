@@ -1,10 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 export default function AdminNavigation() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    localStorage.removeItem('userLoggedIn');
+    localStorage.removeItem('userType');
+    localStorage.removeItem('userData');
+    router.push('/');
+  };
 
   const navItems = [
     { href: '/admin/dashboard', label: 'Accueil', icon: '🏠' },
@@ -26,12 +34,12 @@ export default function AdminNavigation() {
               AMH Été 2025
             </h1>
           </div>
-          <Link
-            href="/"
-            className="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-2 rounded-lg hover:bg-red-50"
+          <button
+            onClick={handleLogout}
+            className="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-2 rounded-lg hover:bg-red-50 transition-colors"
           >
-            🚪
-          </Link>
+            🚪 Se déconnecter
+          </button>
         </div>
       </div>
 
