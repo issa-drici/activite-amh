@@ -25,9 +25,18 @@ export async function POST(
     
     const { workerId, departureCheck, returnCheck, comments, mood } = await request.json();
     
-    if (workerId === undefined || departureCheck === undefined || returnCheck === undefined || !comments || !mood) {
+    // Validation des champs obligatoires
+    if (workerId === undefined || departureCheck === undefined || returnCheck === undefined || !mood) {
       return NextResponse.json(
         { success: false, message: 'Tous les champs sont requis' },
+        { status: 400 }
+      );
+    }
+    
+    // Les commentaires sont obligatoires seulement si départ ET retour sont cochés
+    if (departureCheck && returnCheck && !comments?.trim()) {
+      return NextResponse.json(
+        { success: false, message: 'Les commentaires sont obligatoires quand le départ et le retour sont effectués' },
         { status: 400 }
       );
     }

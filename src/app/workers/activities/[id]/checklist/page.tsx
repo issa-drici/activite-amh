@@ -129,8 +129,9 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
     if (!workerData || !activityId) return;
     
     // Validation des champs obligatoires
-    if (!checklist.comments.trim()) {
-      setMessage('❌ Les commentaires sont obligatoires');
+    // Les commentaires sont obligatoires seulement si départ ET retour sont cochés
+    if (checklist.departure_check && checklist.return_check && !checklist.comments.trim()) {
+      setMessage('❌ Les commentaires sont obligatoires quand le départ et le retour sont effectués');
       return;
     }
     
@@ -357,15 +358,27 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
 
             {/* Commentaires */}
             <div className="space-y-3">
-              <h3 className="text-lg font-medium text-gray-900">💬 Commentaires *</h3>
+              <h3 className={`text-lg font-medium ${checklist.departure_check && checklist.return_check ? 'text-gray-900' : 'text-gray-500'}`}>
+                💬 Commentaires {checklist.departure_check && checklist.return_check ? '*' : '(optionnel)'}
+              </h3>
               <textarea
                 value={checklist.comments}
                 onChange={(e) => setChecklist(prev => ({ ...prev, comments: e.target.value }))}
-                placeholder="Ajoutez des commentaires sur l'activité (obligatoire)"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                placeholder={checklist.departure_check && checklist.return_check 
+                  ? "Ajoutez des commentaires sur l'activité (obligatoire)" 
+                  : "Ajoutez des commentaires sur l'activité (optionnel)"}
+                className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none ${
+                  checklist.departure_check && checklist.return_check ? 'border-gray-300' : 'border-gray-200 bg-gray-50'
+                }`}
                 rows={4}
-                required
+                required={checklist.departure_check && checklist.return_check}
+                disabled={!checklist.departure_check || !checklist.return_check}
               />
+              {checklist.departure_check && checklist.return_check && (
+                <p className="text-sm text-gray-600">
+                  Les commentaires deviennent obligatoires quand le départ et le retour sont effectués
+                </p>
+              )}
             </div>
 
             {/* Bouton de sauvegarde */}
