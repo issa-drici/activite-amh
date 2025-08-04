@@ -612,6 +612,60 @@ export async function removeWorkerFromActivity(activityId: number, workerId: num
   }
 }
 
+export async function updateActivity(activityId: number, activityData: {
+  title: string;
+  description?: string;
+  location: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  max_participants: number;
+  transport_mode: string;
+  category: string;
+}): Promise<void> {
+  return new Promise((resolve, reject) => {
+    db.run(`
+      UPDATE activities 
+      SET title = ?, description = ?, location = ?, date = ?, 
+          start_time = ?, end_time = ?, max_participants = ?, 
+          transport_mode = ?, category = ?
+      WHERE id = ?
+    `, [
+      activityData.title,
+      activityData.description || null,
+      activityData.location,
+      activityData.date,
+      activityData.start_time,
+      activityData.end_time,
+      activityData.max_participants,
+      activityData.transport_mode,
+      activityData.category,
+      activityId
+    ], (err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+}
+
+export async function deleteActivity(activityId: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    // Supprimer d'abord les assignations d'animateurs
+    db.run('DELETE FROM activity_workers WHERE activity_id = ?', [activityId], (err) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      
+      // Puis supprimer l'activité
+      db.run('DELETE FROM activities WHERE id = ?', [activityId], (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+  });
+}
+
 // Initialiser la base de données au démarrage
 let dbInitialized = false;
 

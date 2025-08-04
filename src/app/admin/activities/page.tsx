@@ -25,9 +25,16 @@ interface Activity {
   created_by_name: string;
 }
 
+interface Worker {
+  id: number;
+  name: string;
+  username: string;
+}
+
 export default function ActivitiesPage() {
   const [adminData, setAdminData] = useState<AdminData | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [workers, setWorkers] = useState<Worker[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
@@ -40,7 +47,8 @@ export default function ActivitiesPage() {
     endTime: '',
     maxParticipants: 20,
     transportMode: 'Bus',
-    category: '8-12 ans'
+    category: '8-12 ans',
+    selectedWorkers: [] as number[]
   });
   const router = useRouter();
 
@@ -53,6 +61,18 @@ export default function ActivitiesPage() {
       }
     } catch (_error) {
       console.error('Erreur lors du chargement des activités:', _error);
+    }
+  }, []);
+
+  const loadWorkers = useCallback(async () => {
+    try {
+      const response = await fetch('/api/workers');
+      const data = await response.json();
+      if (data.success) {
+        setWorkers(data.workers);
+      }
+    } catch (_error) {
+      console.error('Erreur lors du chargement des animateurs:', _error);
     }
   }, []);
 
@@ -83,8 +103,9 @@ export default function ActivitiesPage() {
   useEffect(() => {
     if (adminData) {
       loadActivities();
+      loadWorkers();
     }
-  }, [adminData, loadActivities]);
+  }, [adminData, loadActivities, loadWorkers]);
 
   const createActivity = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,7 +137,8 @@ export default function ActivitiesPage() {
           endTime: '',
           maxParticipants: 20,
           transportMode: 'Bus',
-          category: '8-12 ans'
+          category: '8-12 ans',
+          selectedWorkers: []
         });
         setShowCreateForm(false);
         loadActivities();
@@ -316,18 +338,64 @@ export default function ActivitiesPage() {
                 </div>
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description (optionnel)
-                </label>
-                <textarea
-                  placeholder="Détails sur l&apos;activité..."
-                  value={newActivity.description}
-                  onChange={(e) => setNewActivity({...newActivity, description: e.target.value})}
-                  rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-base"
-                />
-              </div>
+                               <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                     Description (optionnel)
+                   </label>
+                   <textarea
+                     placeholder="Détails sur l&apos;activité..."
+                     value={newActivity.description}
+                     onChange={(e) => setNewActivity({...newActivity, description: e.target.value})}
+                     rows={3}
+                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-base"
+                   />
+                 </div>
+
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                     👥 Animateurs à assigner (optionnel)
+                   </label>
+                   <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-xl p-3">
+                     {workers.length === 0 ? (
+                       <p className="text-sm text-gray-500 text-center py-2">
+                         Aucun animateur disponible
+                       </p>
+                     ) : (
+                       <div className="space-y-2">
+                         {workers.map((worker) => (
+                           <label key={worker.id} className="flex items-center space-x-3 cursor-pointer">
+                             <input
+                               type="checkbox"
+                               checked={newActivity.selectedWorkers.includes(worker.id)}
+                               onChange={(e) => {
+                                 if (e.target.checked) {
+                                   setNewActivity({
+                                     ...newActivity,
+                                     selectedWorkers: [...newActivity.selectedWorkers, worker.id]
+                                   });
+                                 } else {
+                                   setNewActivity({
+                                     ...newActivity,
+                                     selectedWorkers: newActivity.selectedWorkers.filter(id => id !== worker.id)
+                                   });
+                                 }
+                               }}
+                               className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                             />
+                             <span className="text-sm text-gray-700">
+                               {worker.name} (@{worker.username})
+                             </span>
+                           </label>
+                         ))}
+                       </div>
+                     )}
+                   </div>
+                   {newActivity.selectedWorkers.length > 0 && (
+                     <p className="text-xs text-gray-500 mt-1">
+                       {newActivity.selectedWorkers.length} animateur(s) sélectionné(s)
+                     </p>
+                   )}
+                 </div>
               
               <button
                 type="submit"
@@ -375,6 +443,12 @@ export default function ActivitiesPage() {
                   )}
                   
                                      <div className="flex space-x-2 mt-3">
+                     <Link
+                       href={`/admin/activities/${activity.id}/edit`}
+                       className="flex-1 bg-purple-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors text-center"
+                     >
+                       ✏️ Modifier
+                     </Link>
                      <Link
                        href={`/admin/activities/${activity.id}/assign`}
                        className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors text-center"
