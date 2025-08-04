@@ -24,16 +24,12 @@ interface Activity {
   created_by_name: string;
 }
 
-interface Worker {
-  id: number;
-  name: string;
-  username: string;
-}
+
 
 export default function EditActivityPage({ params }: { params: Promise<{ id: string }> }) {
   const [adminData, setAdminData] = useState<AdminData | null>(null);
   const [activity, setActivity] = useState<Activity | null>(null);
-  const [workers, setWorkers] = useState<Worker[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -87,7 +83,6 @@ export default function EditActivityPage({ params }: { params: Promise<{ id: str
   useEffect(() => {
     if (adminData && activityId) {
       loadActivity();
-      loadWorkers();
     }
   }, [adminData, activityId]);
 
@@ -115,17 +110,7 @@ export default function EditActivityPage({ params }: { params: Promise<{ id: str
     }
   };
 
-  const loadWorkers = async () => {
-    try {
-      const response = await fetch('/api/workers');
-      const data = await response.json();
-      if (data.success) {
-        setWorkers(data.workers);
-      }
-    } catch (_error) {
-      console.error('Erreur lors du chargement des animateurs:', _error);
-    }
-  };
+
 
   const updateActivity = async (e: React.FormEvent) => {
     e.preventDefault();

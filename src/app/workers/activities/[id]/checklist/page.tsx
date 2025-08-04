@@ -169,7 +169,7 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
       } else {
         setMessage('❌ Erreur lors de la sauvegarde : ' + data.message);
       }
-    } catch (error) {
+    } catch {
       setMessage('❌ Erreur lors de la sauvegarde');
     } finally {
       setSaving(false);

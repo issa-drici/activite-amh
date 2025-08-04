@@ -177,7 +177,7 @@ export default function AssignWorkersPage({ params }: { params: Promise<{ id: st
       return date.toLocaleDateString('fr-FR', {
         timeZone: 'Europe/Paris'
       });
-    } catch (error) {
+    } catch {
       return 'Date invalide';
     }
   };

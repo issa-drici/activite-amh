@@ -48,7 +48,7 @@ export default function ActivityChecklistPage({ params }: { params: Promise<{ id
   const [assignedWorkers, setAssignedWorkers] = useState<AssignedWorker[]>([]);
   const [checklists, setChecklists] = useState<Checklist[]>([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState('');
+
   const [activityId, setActivityId] = useState<string>('');
   const router = useRouter();
 
@@ -137,7 +137,7 @@ export default function ActivityChecklistPage({ params }: { params: Promise<{ id
       return date.toLocaleDateString('fr-FR', {
         timeZone: 'Europe/Paris'
       });
-    } catch (error) {
+    } catch {
       return 'Date invalide';
     }
   };
@@ -153,7 +153,7 @@ export default function ActivityChecklistPage({ params }: { params: Promise<{ id
         minute: '2-digit',
         timeZone: 'Europe/Paris'
       });
-    } catch (error) {
+    } catch {
       return 'Heure invalide';
     }
   };
@@ -192,11 +192,7 @@ export default function ActivityChecklistPage({ params }: { params: Promise<{ id
           </p>
         </div>
 
-        {message && (
-          <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <p className="text-blue-800 text-sm">{message}</p>
-          </div>
-        )}
+
 
         {/* Détails de l'activité */}
         <div className="bg-white rounded-2xl shadow-sm p-4 mb-6 border-l-4 border-purple-500">

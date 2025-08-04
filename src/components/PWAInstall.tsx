@@ -28,7 +28,7 @@ export default function PWAInstall() {
     // Écouter l'événement beforeinstallprompt
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShowInstallButton(true);
     });
 
@@ -47,9 +47,9 @@ export default function PWAInstall() {
     const { outcome } = await deferredPrompt.userChoice;
     
     if (outcome === 'accepted') {
-      console.log('Utilisateur a accepté l\'installation');
+      console.log('Utilisateur a accepté l&apos;installation');
     } else {
-      console.log('Utilisateur a refusé l\'installation');
+      console.log('Utilisateur a refusé l&apos;installation');
     }
     
     setDeferredPrompt(null);
@@ -68,7 +68,7 @@ export default function PWAInstall() {
             </div>
             <div>
               <h3 className="text-sm font-semibold text-gray-900">
-                Installer l'app
+                Installer l&apos;app
               </h3>
               <p className="text-xs text-gray-600">
                 Accédez rapidement à vos activités

@@ -31,13 +31,7 @@ export default function Home() {
     }
   }, [router]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('userLoggedIn');
-    localStorage.removeItem('userType');
-    localStorage.removeItem('userData');
-    // Recharger la page pour afficher le formulaire de login
-    window.location.reload();
-  };
+
 
 
 

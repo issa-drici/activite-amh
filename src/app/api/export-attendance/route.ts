@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getAllAttendance, ensureDatabaseInitialized } from '@/lib/database';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // S'assurer que la base de données est initialisée
     await ensureDatabaseInitialized();
