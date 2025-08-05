@@ -383,12 +383,9 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
                 placeholder={checklist.departure_check && checklist.return_check 
                   ? "Ajoutez des commentaires sur l'activité (obligatoire)" 
                   : "Ajoutez des commentaires sur l'activité (optionnel)"}
-                className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none ${
-                  checklist.departure_check && checklist.return_check ? 'border-gray-300' : 'border-gray-200 bg-gray-50'
-                }`}
+                className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none`}
                 rows={4}
                 required={checklist.departure_check && checklist.return_check}
-                disabled={!checklist.departure_check || !checklist.return_check}
               />
               {checklist.departure_check && checklist.return_check && (
                 <p className="text-sm text-gray-600">
