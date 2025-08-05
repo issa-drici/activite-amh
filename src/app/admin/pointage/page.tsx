@@ -241,36 +241,85 @@ export default function PointagePage() {
             📋 Présences du {formatDate(selectedDate)}
           </h2>
           
-          <div className="space-y-3">
-            {attendance.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">📱</span>
-                </div>
-                <p className="text-gray-500 font-medium">Aucune présence enregistrée</p>
-                <p className="text-gray-400 text-sm mt-1">Scannez un QR code pour commencer</p>
+          {attendance.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">📱</span>
               </div>
-            ) : (
-              attendance.map((record, index) => (
-                <div
-                  key={index}
-                  className="flex justify-between items-center p-4 bg-gray-50 rounded-xl"
-                >
-                  <div>
-                    <span className="font-semibold text-gray-900">{record.name}</span>
-                    <p className="text-xs text-gray-500">Pointé par {record.admin_name}</p>
-                  </div>
-                  <span className={`text-sm font-medium px-3 py-1 rounded-full ${
-                    record.period === 'morning' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-orange-100 text-orange-800'
-                  }`}>
-                    {record.period === 'morning' ? '🌅 Matin' : '🌆 Après-midi'}
+              <p className="text-gray-500 font-medium">Aucune présence enregistrée</p>
+              <p className="text-gray-400 text-sm mt-1">Scannez un QR code pour commencer</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Présences du matin */}
+              <div>
+                <h3 className="text-lg font-semibold text-green-800 mb-3 flex items-center">
+                  🌅 Présences du matin
+                  <span className="ml-2 bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm font-medium">
+                    {attendance.filter(record => record.period === 'morning').length}
                   </span>
+                </h3>
+                <div className="space-y-2">
+                  {attendance.filter(record => record.period === 'morning').length === 0 ? (
+                    <div className="text-center py-4 bg-gray-50 rounded-xl">
+                      <p className="text-gray-500 text-sm">Aucune présence matinale</p>
+                    </div>
+                  ) : (
+                    attendance
+                      .filter(record => record.period === 'morning')
+                      .map((record, index) => (
+                        <div
+                          key={`morning-${index}`}
+                          className="flex justify-between items-center p-3 bg-green-50 rounded-xl border border-green-200"
+                        >
+                          <div>
+                            <span className="font-semibold text-gray-900">{record.name}</span>
+                            <p className="text-xs text-gray-500">Pointé par {record.admin_name}</p>
+                          </div>
+                          <span className="text-sm font-medium px-3 py-1 rounded-full bg-green-100 text-green-800">
+                            🌅 Matin
+                          </span>
+                        </div>
+                      ))
+                  )}
                 </div>
-              ))
-            )}
-          </div>
+              </div>
+
+              {/* Présences de l'après-midi */}
+              <div>
+                <h3 className="text-lg font-semibold text-orange-800 mb-3 flex items-center">
+                  🌆 Présences de l&apos;après-midi
+                  <span className="ml-2 bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm font-medium">
+                    {attendance.filter(record => record.period === 'afternoon').length}
+                  </span>
+                </h3>
+                <div className="space-y-2">
+                  {attendance.filter(record => record.period === 'afternoon').length === 0 ? (
+                    <div className="text-center py-4 bg-gray-50 rounded-xl">
+                      <p className="text-gray-500 text-sm">Aucune présence après-midi</p>
+                    </div>
+                  ) : (
+                    attendance
+                      .filter(record => record.period === 'afternoon')
+                      .map((record, index) => (
+                        <div
+                          key={`afternoon-${index}`}
+                          className="flex justify-between items-center p-3 bg-orange-50 rounded-xl border border-orange-200"
+                        >
+                          <div>
+                            <span className="font-semibold text-gray-900">{record.name}</span>
+                            <p className="text-xs text-gray-500">Pointé par {record.admin_name}</p>
+                          </div>
+                          <span className="text-sm font-medium px-3 py-1 rounded-full bg-orange-100 text-orange-800">
+                            🌆 Après-midi
+                          </span>
+                        </div>
+                      ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
