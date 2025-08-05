@@ -11,20 +11,14 @@ export async function GET() {
     
     // Créer le contenu CSV
     const csvHeaders = [
-      'ID',
       'Nom du travailleur',
-      'Nom d\'utilisateur',
-      'Date',
       'Période',
       'Admin qui a pointé',
       'Date et heure de pointage'
     ];
     
     const csvRows = attendance.map(record => [
-      record.worker_id,
-      record.worker_name,
-      record.worker_username,
-      record.date,
+      record.name,
       record.period === 'morning' ? 'Matin' : 'Après-midi',
       record.admin_name,
       new Date(record.created_at).toLocaleString('fr-FR', {

@@ -95,68 +95,97 @@ export function initDatabase() {
           }
           console.log('Table attendance créée/vérifiée');
 
-                                // Vérifier et créer les admins par défaut
-           db.get('SELECT COUNT(*) as count FROM admins', (err, row: { count: number } | undefined) => {
-             if (err) {
-               console.error('Erreur comptage admins:', err);
-               reject(err);
-               return;
-             }
-             
-             if (!row) {
-               console.error('Aucun résultat pour le comptage des admins');
-               reject(new Error('Aucun résultat pour le comptage des admins'));
-               return;
-             }
-             
-             console.log(`Nombre d'admins existants: ${row.count}`);
-             
-             if (row.count === 0) {
-              console.log('Création des admins par défaut...');
-              
-              const admins = [
-                { name: 'Admin Principal', username: 'admin', password: 'admin123' },
-                { name: 'Admin 2', username: 'admin2', password: 'admin123' },
-                { name: 'Admin 3', username: 'admin3', password: 'admin123' }
-              ];
-              
-              let completed = 0;
-              for (const admin of admins) {
-                db.run('INSERT INTO admins (name, username, password) VALUES (?, ?, ?)', 
-                  [admin.name, admin.username, admin.password], 
-                  (err) => {
-                    if (err) {
-                      console.error(`Erreur création admin ${admin.username}:`, err);
-                    } else {
-                      console.log(`✅ Admin créé: ${admin.name} (${admin.username})`);
-                    }
-                    completed++;
-                    if (completed === admins.length) {
-                      console.log('🎉 Tous les admins par défaut ont été créés avec succès !');
-                      
-                      // Créer les tables pour les activités
-                      createActivityTables().then(() => {
-                        resolve();
-                      }).catch((error) => {
-                        console.error('Erreur création tables activités:', error);
-                        reject(error);
-                      });
-                    }
-                  }
-                );
-              }
-            } else {
-              console.log('📋 Admins existants trouvés dans la base de données');
-              
-              // Créer les tables pour les activités
-              createActivityTables().then(() => {
-                resolve();
-              }).catch((error: Error) => {
-                console.error('Erreur création tables activités:', error);
-                reject(error);
+          // Migration: ajouter la colonne admin_id si elle n'existe pas
+          db.all("PRAGMA table_info(attendance)", (err, columns) => {
+            if (err) {
+              console.error('Erreur lors de la vérification des colonnes:', err);
+              reject(err);
+              return;
+            }
+            
+            const hasAdminId = columns.some((col: unknown) => (col as { name: string }).name === 'admin_id');
+            
+            if (!hasAdminId) {
+              console.log('Migration: ajout de la colonne admin_id à la table attendance...');
+              db.run('ALTER TABLE attendance ADD COLUMN admin_id INTEGER NOT NULL DEFAULT 1', (err) => {
+                if (err) {
+                  console.error('Erreur lors de l\'ajout de la colonne admin_id:', err);
+                  reject(err);
+                  return;
+                }
+                console.log('✅ Colonne admin_id ajoutée avec succès');
+                continueInitialization();
               });
+            } else {
+              console.log('✅ Colonne admin_id existe déjà');
+              continueInitialization();
             }
           });
+
+          function continueInitialization() {
+            // Vérifier et créer les admins par défaut
+            db.get('SELECT COUNT(*) as count FROM admins', (err, row: { count: number } | undefined) => {
+              if (err) {
+                console.error('Erreur comptage admins:', err);
+                reject(err);
+                return;
+              }
+              
+              if (!row) {
+                console.error('Aucun résultat pour le comptage des admins');
+                reject(new Error('Aucun résultat pour le comptage des admins'));
+                return;
+              }
+              
+              console.log(`Nombre d'admins existants: ${row.count}`);
+              
+              if (row.count === 0) {
+                console.log('Création des admins par défaut...');
+                
+                const admins = [
+                  { name: 'Admin Principal', username: 'admin', password: 'admin123' },
+                  { name: 'Admin 2', username: 'admin2', password: 'admin123' },
+                  { name: 'Admin 3', username: 'admin3', password: 'admin123' }
+                ];
+                
+                let completed = 0;
+                for (const admin of admins) {
+                  db.run('INSERT INTO admins (name, username, password) VALUES (?, ?, ?)', 
+                    [admin.name, admin.username, admin.password], 
+                    (err) => {
+                      if (err) {
+                        console.error(`Erreur création admin ${admin.username}:`, err);
+                      } else {
+                        console.log(`✅ Admin créé: ${admin.name} (${admin.username})`);
+                      }
+                      completed++;
+                      if (completed === admins.length) {
+                        console.log('🎉 Tous les admins par défaut ont été créés avec succès !');
+                        
+                        // Créer les tables pour les activités
+                        createActivityTables().then(() => {
+                          resolve();
+                        }).catch((error) => {
+                          console.error('Erreur création tables activités:', error);
+                          reject(error);
+                        });
+                      }
+                    }
+                  );
+                }
+              } else {
+                console.log('📋 Admins existants trouvés dans la base de données');
+                
+                // Créer les tables pour les activités
+                createActivityTables().then(() => {
+                  resolve();
+                }).catch((error: Error) => {
+                  console.error('Erreur création tables activités:', error);
+                  reject(error);
+                });
+              }
+            });
+          }
         });
       });
     });
@@ -419,40 +448,17 @@ export function getWorkerAttendanceCount(workerId: number): Promise<{ count: num
   });
 }
 
-export function getAllAttendance(): Promise<Array<{ 
-  worker_id: number; 
-  worker_name: string; 
-  worker_username: string; 
-  date: string; 
-  period: string; 
-  created_at: string; 
-  admin_name: string 
-}>> {
+export function getAllAttendance(): Promise<Array<{ name: string; period: string; created_at: string; admin_name: string }>> {
   return new Promise((resolve, reject) => {
     db.all(`
-      SELECT 
-        a.worker_id,
-        w.name as worker_name,
-        w.username as worker_username,
-        a.date,
-        a.period,
-        a.created_at,
-        adm.name as admin_name
+      SELECT w.name, a.period, a.created_at, adm.name as admin_name
       FROM attendance a
       JOIN workers w ON a.worker_id = w.id
       JOIN admins adm ON a.admin_id = adm.id
       ORDER BY a.date DESC, w.name, a.period
     `, (err, rows) => {
       if (err) reject(err);
-      else resolve(rows as Array<{ 
-        worker_id: number; 
-        worker_name: string; 
-        worker_username: string; 
-        date: string; 
-        period: string; 
-        created_at: string; 
-        admin_name: string 
-      }>);
+      else resolve(rows as Array<{ name: string; period: string; created_at: string; admin_name: string }>);
     });
   });
 }

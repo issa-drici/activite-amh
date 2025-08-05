@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { markAttendance, getAttendanceByDate, getWorkerByQrCode } from '@/lib/database';
+import { markAttendance, getAttendanceByDate, getAllAttendance, getWorkerByQrCode } from '@/lib/database';
 import { isValidWorkerQrCode } from '@/lib/qr-utils';
 
 interface Worker {
@@ -64,12 +64,12 @@ export async function GET(request: NextRequest) {
     const date = searchParams.get('date');
     
     if (!date) {
-      return NextResponse.json(
-        { success: false, message: 'Date requise' },
-        { status: 400 }
-      );
+      // Si aucune date n'est fournie, retourner toutes les présences
+      const attendance = await getAllAttendance();
+      return NextResponse.json({ success: true, attendance });
     }
     
+    // Si une date est fournie, retourner les présences pour cette date
     const attendance = await getAttendanceByDate(date);
     return NextResponse.json({ success: true, attendance });
   } catch (error) {
