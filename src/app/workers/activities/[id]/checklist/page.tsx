@@ -34,6 +34,12 @@ interface Checklist {
   last_updated?: string;
 }
 
+interface AssignedWorker {
+  worker_id: number;
+  worker_name: string;
+  assigned_at: string;
+}
+
 export default function WorkerChecklistPage({ params }: { params: Promise<{ id: string }> }) {
   const [workerData, setWorkerData] = useState<WorkerData | null>(null);
   const [activity, setActivity] = useState<Activity | null>(null);
@@ -49,6 +55,7 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [activityId, setActivityId] = useState<string>('');
+  const [assignedWorkers, setAssignedWorkers] = useState<AssignedWorker[]>([]);
   const router = useRouter();
 
   // Charger les paramètres de l'URL
@@ -117,13 +124,28 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
     }
   }, [activityId, workerData]);
 
+  const loadAssignedWorkers = useCallback(async () => {
+    if (!activityId) return;
+    
+    try {
+      const response = await fetch(`/api/activities/${activityId}/assign`);
+      const data = await response.json();
+      if (data.success) {
+        setAssignedWorkers(data.assignedWorkers);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des animateurs assignés:', error);
+    }
+  }, [activityId]);
+
   // Charger les données quand les dépendances sont disponibles
   useEffect(() => {
     if (workerData && activityId) {
       loadActivity();
       loadChecklist();
+      loadAssignedWorkers();
     }
-  }, [workerData, activityId, loadActivity, loadChecklist]);
+  }, [workerData, activityId, loadActivity, loadChecklist, loadAssignedWorkers]);
 
   const saveChecklist = async () => {
     if (!workerData || !activityId) return;
@@ -266,7 +288,7 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
         <div className="bg-white rounded-2xl shadow-sm p-4 mb-6 border-l-4 border-purple-500">
           <h2 className="text-lg font-semibold text-gray-900 mb-3">Détails de l&apos;activité</h2>
           <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
-            <div>�� {activity.location}</div>
+            <div>📍 {activity.location}</div>
             <div>📅 {formatDate(activity.date)}</div>
             <div>🕐 {activity.start_time} - {activity.end_time}</div>
             <div>👥 {activity.max_participants} participants</div>
@@ -275,6 +297,41 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
           </div>
           {activity.description && (
             <p className="text-sm text-gray-600 mt-2">{activity.description}</p>
+          )}
+        </div>
+
+        {/* Animateurs assignés */}
+        <div className="bg-white rounded-2xl shadow-sm p-4 mb-6 border-l-4 border-blue-500">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">👥 Équipe d&apos;animation</h2>
+          {assignedWorkers.length === 0 ? (
+            <p className="text-sm text-gray-500">Aucun animateur assigné</p>
+          ) : (
+            <div className="space-y-2">
+              {assignedWorkers.map((worker) => (
+                <div key={worker.worker_id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                  <div className="flex items-center">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
+                      worker.worker_id === workerData?.id ? 'bg-green-500 text-white' : 'bg-blue-500 text-white'
+                    }`}>
+                      <span className="text-sm font-bold">
+                        {worker.worker_id === workerData?.id ? 'Moi' : worker.worker_name.charAt(0)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className={`font-medium ${
+                        worker.worker_id === workerData?.id ? 'text-green-700' : 'text-gray-700'
+                      }`}>
+                        {worker.worker_name}
+                        {worker.worker_id === workerData?.id && ' (Vous)'}
+                      </span>
+                      <p className="text-xs text-gray-500">
+                        Assigné le {formatDate(worker.assigned_at)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
