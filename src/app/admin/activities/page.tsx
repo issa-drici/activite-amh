@@ -161,6 +161,67 @@ export default function ActivitiesPage() {
     });
   };
 
+  // Fonctions pour grouper les activités
+  const getTodayActivities = () => {
+    const today = new Date().toISOString().split('T')[0];
+    return activities.filter(activity => activity.date === today);
+  };
+
+  const getUpcomingActivities = () => {
+    const today = new Date().toISOString().split('T')[0];
+    return activities.filter(activity => activity.date > today);
+  };
+
+  const getPastActivities = () => {
+    const today = new Date().toISOString().split('T')[0];
+    return activities.filter(activity => activity.date < today);
+  };
+
+  const renderActivityCard = (activity: Activity) => (
+    <div
+      key={activity.id}
+      className="bg-white rounded-2xl shadow-sm p-4 border-l-4 border-purple-500"
+    >
+      <div className="space-y-2">
+        <h3 className="font-semibold text-gray-900 text-lg">{activity.title}</h3>
+        
+        <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+          <div>📍 {activity.location}</div>
+          <div>📅 {formatDate(activity.date)}</div>
+          <div>🕐 {activity.start_time} - {activity.end_time}</div>
+          <div>👥 {activity.max_participants} participants</div>
+          <div>🚌 {activity.transport_mode}</div>
+          <div>👥 {activity.category}</div>
+        </div>
+        
+        {activity.description && (
+          <p className="text-sm text-gray-600 mt-2">{activity.description}</p>
+        )}
+        
+        <div className="flex space-x-2 mt-3">
+          <Link
+            href={`/admin/activities/${activity.id}/edit`}
+            className="flex-1 bg-purple-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors text-center"
+          >
+            ✏️ Modifier
+          </Link>
+          <Link
+            href={`/admin/activities/${activity.id}/assign`}
+            className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors text-center"
+          >
+            👥 Attribuer
+          </Link>
+          <Link
+            href={`/admin/activities/${activity.id}/checklist`}
+            className="flex-1 bg-green-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors text-center"
+          >
+            📋 Feuilles
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -403,7 +464,7 @@ export default function ActivitiesPage() {
         )}
 
         {/* Liste des activités */}
-        <div className="space-y-4">
+        <div className="space-y-6">
           <h2 className="text-xl font-semibold text-gray-900">Activités créées</h2>
           
           {activities.length === 0 ? (
@@ -415,50 +476,52 @@ export default function ActivitiesPage() {
               <p className="text-gray-400 text-sm mt-1">Créez votre première activité !</p>
             </div>
           ) : (
-            activities.map((activity) => (
-              <div
-                key={activity.id}
-                className="bg-white rounded-2xl shadow-sm p-4 border-l-4 border-purple-500"
-              >
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-gray-900 text-lg">{activity.title}</h3>
-                  
-                  <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
-                    <div>📍 {activity.location}</div>
-                    <div>📅 {formatDate(activity.date)}</div>
-                    <div>🕐 {activity.start_time} - {activity.end_time}</div>
-                    <div>👥 {activity.max_participants} participants</div>
-                    <div>🚌 {activity.transport_mode}</div>
-                    <div>👥 {activity.category}</div>
+            <div className="space-y-6">
+              {/* Activités d'aujourd'hui */}
+              {getTodayActivities().length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-green-800 mb-3 flex items-center">
+                    🎯 Aujourd&apos;hui
+                    <span className="ml-2 bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm font-medium">
+                      {getTodayActivities().length}
+                    </span>
+                  </h3>
+                  <div className="space-y-3">
+                    {getTodayActivities().map(renderActivityCard)}
                   </div>
-                  
-                  {activity.description && (
-                    <p className="text-sm text-gray-600 mt-2">{activity.description}</p>
-                  )}
-                  
-                                     <div className="flex space-x-2 mt-3">
-                     <Link
-                       href={`/admin/activities/${activity.id}/edit`}
-                       className="flex-1 bg-purple-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors text-center"
-                     >
-                       ✏️ Modifier
-                     </Link>
-                     <Link
-                       href={`/admin/activities/${activity.id}/assign`}
-                       className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors text-center"
-                     >
-                       👥 Attribuer
-                     </Link>
-                     <Link
-                       href={`/admin/activities/${activity.id}/checklist`}
-                       className="flex-1 bg-green-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors text-center"
-                     >
-                       📋 Feuilles
-                     </Link>
-                   </div>
                 </div>
-              </div>
-            ))
+              )}
+
+              {/* Activités à venir */}
+              {getUpcomingActivities().length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-blue-800 mb-3 flex items-center">
+                    🔮 À venir
+                    <span className="ml-2 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
+                      {getUpcomingActivities().length}
+                    </span>
+                  </h3>
+                  <div className="space-y-3">
+                    {getUpcomingActivities().map(renderActivityCard)}
+                  </div>
+                </div>
+              )}
+
+              {/* Activités passées */}
+              {getPastActivities().length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-600 mb-3 flex items-center">
+                    📚 Passées
+                    <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-sm font-medium">
+                      {getPastActivities().length}
+                    </span>
+                  </h3>
+                  <div className="space-y-3">
+                    {getPastActivities().map(renderActivityCard)}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
