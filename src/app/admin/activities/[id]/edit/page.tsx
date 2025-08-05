@@ -43,7 +43,7 @@ export default function EditActivityPage({ params }: { params: Promise<{ id: str
     endTime: '',
     maxParticipants: 20,
     transportMode: 'Bus',
-    category: '8-12 ans',
+    category: '5-8 ans',
     selectedWorkers: [] as number[]
   });
   const router = useRouter();
@@ -333,12 +333,8 @@ export default function EditActivityPage({ params }: { params: Promise<{ id: str
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-base"
                   required
                 >
-                  <option value="3-6 ans">👶 3-6 ans</option>
-                  <option value="6-8 ans">🧒 6-8 ans</option>
-                  <option value="8-12 ans">👦 8-12 ans</option>
-                  <option value="12-15 ans">👧 12-15 ans</option>
-                  <option value="15-18 ans">👨 15-18 ans</option>
-                  <option value="Tous âges">👥 Tous âges</option>
+                  <option value="5-8 ans">🧒 5-8 ans</option>
+                  <option value="8-15 ans">👦 8-15 ans</option>
                 </select>
               </div>
             </div>
