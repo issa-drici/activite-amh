@@ -802,3 +802,18 @@ initDatabase()
   });
 
 export default db; 
+
+export function getWorkerChecklists(workerId: number): Promise<Array<ActivityChecklist & { activity_title: string; activity_date: string }>> {
+  return new Promise((resolve, reject) => {
+    db.all(`
+      SELECT ac.*, a.title as activity_title, a.date as activity_date
+      FROM activity_checklists ac
+      JOIN activities a ON ac.activity_id = a.id
+      WHERE ac.worker_id = ?
+      ORDER BY a.date DESC, a.start_time
+    `, [workerId], (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows as Array<ActivityChecklist & { activity_title: string; activity_date: string }>);
+    });
+  });
+} 

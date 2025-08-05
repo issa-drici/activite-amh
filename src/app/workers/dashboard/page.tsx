@@ -25,6 +25,17 @@ interface AssignedActivity {
   assigned_at: string;
 }
 
+interface ActivityChecklist {
+  id: number;
+  activity_id: number;
+  worker_id: number;
+  departure_check: boolean;
+  return_check: boolean;
+  comments: string;
+  mood: 'happy' | 'neutral' | 'sad' | null;
+  last_updated: string;
+}
+
 interface Attendance {
   date: string;
   period: string;
@@ -35,6 +46,7 @@ export default function WorkerDashboard() {
   const [workerData, setWorkerData] = useState<WorkerData | null>(null);
   const [assignedActivities, setAssignedActivities] = useState<AssignedActivity[]>([]);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
+  const [checklists, setChecklists] = useState<ActivityChecklist[]>([]);
   const [totalSessions, setTotalSessions] = useState(0);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -68,6 +80,20 @@ export default function WorkerDashboard() {
     }
   }, [workerData]);
 
+  const loadChecklists = useCallback(async () => {
+    if (!workerData) return;
+    
+    try {
+      const response = await fetch(`/api/workers/${workerData.id}/checklists`);
+      const data = await response.json();
+      if (data.success) {
+        setChecklists(data.checklists);
+      }
+    } catch (_error) {
+      console.error('Erreur lors du chargement des checklists:', _error);
+    }
+  }, [workerData]);
+
   useEffect(() => {
     // Vérifier si l'animateur est connecté
     if (typeof window !== 'undefined') {
@@ -96,8 +122,9 @@ export default function WorkerDashboard() {
     if (workerData) {
       loadAssignedActivities();
       loadAttendance();
+      loadChecklists();
     }
-  }, [workerData, loadAssignedActivities, loadAttendance]);
+  }, [workerData, loadAssignedActivities, loadAttendance, loadChecklists]);
 
   const logout = () => {
     localStorage.removeItem('userLoggedIn');
@@ -125,7 +152,82 @@ export default function WorkerDashboard() {
   };
 
   const getPeriodLabel = (period: string) => {
-    return period === 'morning' ? 'Matin' : 'Après-midi';
+    return period === 'morning' ? '🌅 Matin' : '🌆 Après-midi';
+  };
+
+  // Fonctions pour grouper les activités
+  const getTodayActivities = () => {
+    const today = new Date().toISOString().split('T')[0];
+    return assignedActivities.filter(activity => activity.date === today);
+  };
+
+  const getUpcomingActivities = () => {
+    const today = new Date().toISOString().split('T')[0];
+    return assignedActivities.filter(activity => activity.date > today);
+  };
+
+  const getPastActivities = () => {
+    const today = new Date().toISOString().split('T')[0];
+    return assignedActivities.filter(activity => activity.date < today);
+  };
+
+  const renderActivityCard = (activity: AssignedActivity, showChecklistStatus: boolean = true) => {
+    // Vérifier si une checklist existe pour cette activité
+    const checklist = checklists.find(c => c.activity_id === activity.id);
+    const hasChecklist = checklist && (checklist.departure_check || checklist.return_check);
+    const isCompleted = checklist && checklist.departure_check && checklist.return_check;
+    
+    return (
+      <div
+        key={activity.id}
+        className="bg-white rounded-2xl shadow-sm p-4 border-l-4 border-purple-500"
+      >
+        <div className="space-y-3">
+          <div className="flex justify-between items-start">
+            <h3 className="font-semibold text-gray-900 text-lg">{activity.title}</h3>
+            {showChecklistStatus && hasChecklist && (
+              <div className="flex items-center space-x-2">
+                {isCompleted ? (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    ✅ Complétée
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                    ⏳ En cours
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+          
+          <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+            <div>📍 {activity.location}</div>
+            <div>📅 {formatDate(activity.date)}</div>
+            <div>🕐 {activity.start_time} - {activity.end_time}</div>
+            <div>👥 {activity.max_participants} participants</div>
+            <div>🚌 {activity.transport_mode}</div>
+            <div>👥 {activity.category}</div>
+          </div>
+          
+          {activity.description && (
+            <p className="text-sm text-gray-600">{activity.description}</p>
+          )}
+          
+          <div className="flex space-x-2 mt-3">
+            <Link
+              href={`/workers/activities/${activity.id}/checklist`}
+              className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors text-center ${
+                hasChecklist 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  : 'bg-green-600 text-white hover:bg-green-700'
+              }`}
+            >
+              {hasChecklist ? '📋 Modifier la feuille de route' : '📋 Feuille de route'}
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
@@ -207,38 +309,52 @@ export default function WorkerDashboard() {
               <p className="text-gray-400 text-sm mt-1">Vous serez notifié quand une activité vous sera assignée</p>
             </div>
           ) : (
-            assignedActivities.map((activity) => (
-              <div
-                key={activity.id}
-                className="bg-white rounded-2xl shadow-sm p-4 border-l-4 border-purple-500"
-              >
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-gray-900 text-lg">{activity.title}</h3>
-                  
-                  <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
-                    <div>📍 {activity.location}</div>
-                    <div>📅 {formatDate(activity.date)}</div>
-                    <div>🕐 {activity.start_time} - {activity.end_time}</div>
-                    <div>👥 {activity.max_participants} participants</div>
-                    <div>🚌 {activity.transport_mode}</div>
-                    <div>👥 {activity.category}</div>
-                  </div>
-                  
-                  {activity.description && (
-                    <p className="text-sm text-gray-600">{activity.description}</p>
-                  )}
-                  
-                  <div className="flex space-x-2 mt-3">
-                    <Link
-                      href={`/workers/activities/${activity.id}/checklist`}
-                      className="flex-1 bg-green-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors text-center"
-                    >
-                      📋 Feuille de route
-                    </Link>
+            <div className="space-y-6">
+              {/* Activités d'aujourd'hui */}
+              {getTodayActivities().length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-green-800 mb-3 flex items-center">
+                    🎯 Aujourd&apos;hui
+                    <span className="ml-2 bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm font-medium">
+                      {getTodayActivities().length}
+                    </span>
+                  </h3>
+                  <div className="space-y-3">
+                    {getTodayActivities().map(activity => renderActivityCard(activity, true))}
                   </div>
                 </div>
-              </div>
-            ))
+              )}
+
+              {/* Activités à venir */}
+              {getUpcomingActivities().length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-blue-800 mb-3 flex items-center">
+                    🔮 À venir
+                    <span className="ml-2 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
+                      {getUpcomingActivities().length}
+                    </span>
+                  </h3>
+                  <div className="space-y-3">
+                    {getUpcomingActivities().map(activity => renderActivityCard(activity, false))}
+                  </div>
+                </div>
+              )}
+
+              {/* Activités passées */}
+              {getPastActivities().length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-600 mb-3 flex items-center">
+                    📚 Passées
+                    <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-sm font-medium">
+                      {getPastActivities().length}
+                    </span>
+                  </h3>
+                  <div className="space-y-3">
+                    {getPastActivities().map(activity => renderActivityCard(activity, true))}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
