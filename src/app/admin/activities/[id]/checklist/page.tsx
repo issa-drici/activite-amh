@@ -37,7 +37,7 @@ interface Checklist {
   departure_check: boolean;
   return_check: boolean;
   comments: string;
-  mood: 'happy' | 'neutral' | 'sad';
+  mood: 'happy' | 'neutral' | 'sad' | null;
   last_updated: string;
   worker_name: string;
 }
@@ -284,7 +284,8 @@ export default function ActivityChecklistPage({ params }: { params: Promise<{ id
                               Ressenti : {
                                 checklist.mood === 'happy' ? '😊 Heureux' :
                                 checklist.mood === 'neutral' ? '😐 Moyen' :
-                                '😔 Triste'
+                                checklist.mood === 'sad' ? '😔 Triste' :
+                                '❓ Non renseigné'
                               }
                             </div>
                           </div>

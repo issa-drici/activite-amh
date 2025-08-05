@@ -26,9 +26,17 @@ export async function POST(
     const { workerId, departureCheck, returnCheck, comments, mood } = await request.json();
     
     // Validation des champs obligatoires
-    if (workerId === undefined || departureCheck === undefined || returnCheck === undefined || !mood) {
+    if (workerId === undefined || departureCheck === undefined || returnCheck === undefined) {
       return NextResponse.json(
         { success: false, message: 'Tous les champs sont requis' },
+        { status: 400 }
+      );
+    }
+    
+    // Le mood est obligatoire seulement si départ ET retour sont cochés
+    if (departureCheck && returnCheck && !mood) {
+      return NextResponse.json(
+        { success: false, message: 'Le ressenti de la journée est obligatoire quand le départ et le retour sont effectués' },
         { status: 400 }
       );
     }

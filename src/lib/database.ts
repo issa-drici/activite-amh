@@ -219,7 +219,7 @@ interface ActivityChecklist {
   departure_check: boolean;
   return_check: boolean;
   comments: string;
-  mood: 'happy' | 'neutral' | 'sad';
+  mood: 'happy' | 'neutral' | 'sad' | null;
   last_updated: string;
 }
 
@@ -578,7 +578,7 @@ export function updateActivityChecklist(
   departureCheck: boolean,
   returnCheck: boolean,
   comments: string,
-  mood: 'happy' | 'neutral' | 'sad'
+  mood: 'happy' | 'neutral' | 'sad' | null
 ): Promise<ActivityChecklist> {
   return new Promise((resolve, reject) => {
     db.run(`

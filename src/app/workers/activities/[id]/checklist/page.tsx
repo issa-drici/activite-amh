@@ -30,7 +30,7 @@ interface Checklist {
   departure_check: boolean;
   return_check: boolean;
   comments: string;
-  mood: 'happy' | 'neutral' | 'sad';
+  mood: 'happy' | 'neutral' | 'sad' | null;
   last_updated?: string;
 }
 
@@ -43,7 +43,7 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
     departure_check: false,
     return_check: false,
     comments: '',
-    mood: 'neutral'
+    mood: null
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -135,6 +135,12 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
       return;
     }
     
+    // Le mood est obligatoire seulement si départ ET retour sont cochés
+    if (checklist.departure_check && checklist.return_check && !checklist.mood) {
+      setMessage('❌ Le ressenti de la journée est obligatoire quand le départ et le retour sont effectués');
+      return;
+    }
+    
     setSaving(true);
     setMessage('');
     
@@ -149,7 +155,7 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
           departureCheck: checklist.departure_check,
           returnCheck: checklist.return_check,
           comments: checklist.comments,
-          mood: checklist.mood
+          mood: checklist.mood || 'neutral' // Envoyer 'neutral' si null
         }),
       });
 
@@ -260,7 +266,7 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
         <div className="bg-white rounded-2xl shadow-sm p-4 mb-6 border-l-4 border-purple-500">
           <h2 className="text-lg font-semibold text-gray-900 mb-3">Détails de l&apos;activité</h2>
           <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
-            <div>📍 {activity.location}</div>
+            <div>�� {activity.location}</div>
             <div>📅 {formatDate(activity.date)}</div>
             <div>🕐 {activity.start_time} - {activity.end_time}</div>
             <div>👥 {activity.max_participants} participants</div>
@@ -315,16 +321,19 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
 
             {/* Ressenti de la journée */}
             <div className="space-y-3">
-              <h3 className="text-lg font-medium text-gray-900">😊 Ressenti de la journée</h3>
-              <div className="flex space-x-4">
+              <h3 className={`text-lg font-medium ${checklist.departure_check && checklist.return_check ? 'text-gray-900' : 'text-gray-500'}`}>
+                😊 Ressenti de la journée {checklist.departure_check && checklist.return_check ? '*' : '(optionnel)'}
+              </h3>
+              <div className={`flex space-x-4 ${!checklist.departure_check || !checklist.return_check ? 'opacity-50' : ''}`}>
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
                     type="radio"
                     name="mood"
                     value="happy"
                     checked={checklist.mood === 'happy'}
-                    onChange={(e) => setChecklist(prev => ({ ...prev, mood: e.target.value as 'happy' | 'neutral' | 'sad' }))}
+                    onChange={(e) => setChecklist(prev => ({ ...prev, mood: e.target.value as 'happy' | 'neutral' | 'sad' | null }))}
                     className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
+                    disabled={!checklist.departure_check || !checklist.return_check}
                   />
                   <span className="text-2xl">😊</span>
                   <span className="text-sm text-gray-700">Heureux</span>
@@ -335,8 +344,9 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
                     name="mood"
                     value="neutral"
                     checked={checklist.mood === 'neutral'}
-                    onChange={(e) => setChecklist(prev => ({ ...prev, mood: e.target.value as 'happy' | 'neutral' | 'sad' }))}
+                    onChange={(e) => setChecklist(prev => ({ ...prev, mood: e.target.value as 'happy' | 'neutral' | 'sad' | null }))}
                     className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
+                    disabled={!checklist.departure_check || !checklist.return_check}
                   />
                   <span className="text-2xl">😐</span>
                   <span className="text-sm text-gray-700">Moyen</span>
@@ -347,13 +357,19 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
                     name="mood"
                     value="sad"
                     checked={checklist.mood === 'sad'}
-                    onChange={(e) => setChecklist(prev => ({ ...prev, mood: e.target.value as 'happy' | 'neutral' | 'sad' }))}
+                    onChange={(e) => setChecklist(prev => ({ ...prev, mood: e.target.value as 'happy' | 'neutral' | 'sad' | null }))}
                     className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
+                    disabled={!checklist.departure_check || !checklist.return_check}
                   />
                   <span className="text-2xl">😔</span>
                   <span className="text-sm text-gray-700">Triste</span>
                 </label>
               </div>
+              {checklist.departure_check && checklist.return_check && (
+                <p className="text-sm text-gray-600">
+                  Le ressenti devient obligatoire quand le départ et le retour sont effectués
+                </p>
+              )}
             </div>
 
             {/* Commentaires */}
@@ -405,7 +421,8 @@ export default function WorkerChecklistPage({ params }: { params: Promise<{ id: 
               <div>Ressenti : {
                 checklist.mood === 'happy' ? '😊 Heureux' :
                 checklist.mood === 'neutral' ? '😐 Moyen' :
-                '😔 Triste'
+                checklist.mood === 'sad' ? '😔 Triste' :
+                '❓ Non renseigné'
               }</div>
               <div>
                 <strong>Commentaires :</strong>
