@@ -421,17 +421,31 @@ export function getAttendanceByDate(date: string): Promise<Array<{ name: string;
       const hasAdminId = columns.some((col: unknown) => (col as { name: string }).name === 'admin_id');
       
       if (hasAdminId) {
-        // Si la colonne admin_id existe, utiliser la requête complète
+        // Si la colonne admin_id existe, essayer la requête complète avec LEFT JOIN
         db.all(`
-          SELECT w.name, a.period, a.created_at, adm.name as admin_name
+          SELECT w.name, a.period, a.created_at, COALESCE(adm.name, 'Admin Principal') as admin_name
           FROM attendance a
           JOIN workers w ON a.worker_id = w.id
-          JOIN admins adm ON a.admin_id = adm.id
+          LEFT JOIN admins adm ON a.admin_id = adm.id
           WHERE a.date = ?
           ORDER BY w.name, a.period
         `, [date], (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows as Array<{ name: string; period: string; created_at: string; admin_name: string }>);
+          if (err) {
+            // Si la requête échoue, utiliser la requête simplifiée
+            console.log('Erreur avec la requête complète, utilisation de la requête simplifiée:', err.message);
+            db.all(`
+              SELECT w.name, a.period, a.created_at, 'Admin Principal' as admin_name
+              FROM attendance a
+              JOIN workers w ON a.worker_id = w.id
+              WHERE a.date = ?
+              ORDER BY w.name, a.period
+            `, [date], (err2, rows2) => {
+              if (err2) reject(err2);
+              else resolve(rows2 as Array<{ name: string; period: string; created_at: string; admin_name: string }>);
+            });
+          } else {
+            resolve(rows as Array<{ name: string; period: string; created_at: string; admin_name: string }>);
+          }
         });
       } else {
         // Si la colonne admin_id n'existe pas, utiliser une requête simplifiée
@@ -485,16 +499,29 @@ export function getAllAttendance(): Promise<Array<{ name: string; period: string
       const hasAdminId = columns.some((col: unknown) => (col as { name: string }).name === 'admin_id');
       
       if (hasAdminId) {
-        // Si la colonne admin_id existe, utiliser la requête complète
+        // Si la colonne admin_id existe, essayer la requête complète avec LEFT JOIN
         db.all(`
-          SELECT w.name, a.period, a.created_at, adm.name as admin_name
+          SELECT w.name, a.period, a.created_at, COALESCE(adm.name, 'Admin Principal') as admin_name
           FROM attendance a
           JOIN workers w ON a.worker_id = w.id
-          JOIN admins adm ON a.admin_id = adm.id
+          LEFT JOIN admins adm ON a.admin_id = adm.id
           ORDER BY a.date DESC, w.name, a.period
         `, (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows as Array<{ name: string; period: string; created_at: string; admin_name: string }>);
+          if (err) {
+            // Si la requête échoue, utiliser la requête simplifiée
+            console.log('Erreur avec la requête complète, utilisation de la requête simplifiée:', err.message);
+            db.all(`
+              SELECT w.name, a.period, a.created_at, 'Admin Principal' as admin_name
+              FROM attendance a
+              JOIN workers w ON a.worker_id = w.id
+              ORDER BY a.date DESC, w.name, a.period
+            `, (err2, rows2) => {
+              if (err2) reject(err2);
+              else resolve(rows2 as Array<{ name: string; period: string; created_at: string; admin_name: string }>);
+            });
+          } else {
+            resolve(rows as Array<{ name: string; period: string; created_at: string; admin_name: string }>);
+          }
         });
       } else {
         // Si la colonne admin_id n'existe pas, utiliser une requête simplifiée
