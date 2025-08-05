@@ -13,10 +13,7 @@ interface AdminData {
 }
 
 interface Attendance {
-  worker_id: number;
-  worker_name: string;
-  worker_username: string;
-  date: string;
+  name: string;
   period: string;
   created_at: string;
   admin_name: string;
@@ -260,7 +257,7 @@ export default function PointagePage() {
                   className="flex justify-between items-center p-4 bg-gray-50 rounded-xl"
                 >
                   <div>
-                    <span className="font-semibold text-gray-900">{record.worker_name}</span>
+                    <span className="font-semibold text-gray-900">{record.name}</span>
                     <p className="text-xs text-gray-500">Pointé par {record.admin_name}</p>
                   </div>
                   <span className={`text-sm font-medium px-3 py-1 rounded-full ${

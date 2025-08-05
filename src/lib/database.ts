@@ -411,16 +411,41 @@ export function markAttendance(workerId: number, adminId: number, date: string, 
 
 export function getAttendanceByDate(date: string): Promise<Array<{ name: string; period: string; created_at: string; admin_name: string }>> {
   return new Promise((resolve, reject) => {
-    db.all(`
-      SELECT w.name, a.period, a.created_at, adm.name as admin_name
-      FROM attendance a
-      JOIN workers w ON a.worker_id = w.id
-      JOIN admins adm ON a.admin_id = adm.id
-      WHERE a.date = ?
-      ORDER BY w.name, a.period
-    `, [date], (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows as Array<{ name: string; period: string; created_at: string; admin_name: string }>);
+    // Vérifier d'abord si la colonne admin_id existe
+    db.all("PRAGMA table_info(attendance)", (err, columns) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      
+      const hasAdminId = columns.some((col: unknown) => (col as { name: string }).name === 'admin_id');
+      
+      if (hasAdminId) {
+        // Si la colonne admin_id existe, utiliser la requête complète
+        db.all(`
+          SELECT w.name, a.period, a.created_at, adm.name as admin_name
+          FROM attendance a
+          JOIN workers w ON a.worker_id = w.id
+          JOIN admins adm ON a.admin_id = adm.id
+          WHERE a.date = ?
+          ORDER BY w.name, a.period
+        `, [date], (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows as Array<{ name: string; period: string; created_at: string; admin_name: string }>);
+        });
+      } else {
+        // Si la colonne admin_id n'existe pas, utiliser une requête simplifiée
+        db.all(`
+          SELECT w.name, a.period, a.created_at, 'Admin Principal' as admin_name
+          FROM attendance a
+          JOIN workers w ON a.worker_id = w.id
+          WHERE a.date = ?
+          ORDER BY w.name, a.period
+        `, [date], (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows as Array<{ name: string; period: string; created_at: string; admin_name: string }>);
+        });
+      }
     });
   });
 }
@@ -450,15 +475,39 @@ export function getWorkerAttendanceCount(workerId: number): Promise<{ count: num
 
 export function getAllAttendance(): Promise<Array<{ name: string; period: string; created_at: string; admin_name: string }>> {
   return new Promise((resolve, reject) => {
-    db.all(`
-      SELECT w.name, a.period, a.created_at, adm.name as admin_name
-      FROM attendance a
-      JOIN workers w ON a.worker_id = w.id
-      JOIN admins adm ON a.admin_id = adm.id
-      ORDER BY a.date DESC, w.name, a.period
-    `, (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows as Array<{ name: string; period: string; created_at: string; admin_name: string }>);
+    // Vérifier d'abord si la colonne admin_id existe
+    db.all("PRAGMA table_info(attendance)", (err, columns) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      
+      const hasAdminId = columns.some((col: unknown) => (col as { name: string }).name === 'admin_id');
+      
+      if (hasAdminId) {
+        // Si la colonne admin_id existe, utiliser la requête complète
+        db.all(`
+          SELECT w.name, a.period, a.created_at, adm.name as admin_name
+          FROM attendance a
+          JOIN workers w ON a.worker_id = w.id
+          JOIN admins adm ON a.admin_id = adm.id
+          ORDER BY a.date DESC, w.name, a.period
+        `, (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows as Array<{ name: string; period: string; created_at: string; admin_name: string }>);
+        });
+      } else {
+        // Si la colonne admin_id n'existe pas, utiliser une requête simplifiée
+        db.all(`
+          SELECT w.name, a.period, a.created_at, 'Admin Principal' as admin_name
+          FROM attendance a
+          JOIN workers w ON a.worker_id = w.id
+          ORDER BY a.date DESC, w.name, a.period
+        `, (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows as Array<{ name: string; period: string; created_at: string; admin_name: string }>);
+        });
+      }
     });
   });
 }
