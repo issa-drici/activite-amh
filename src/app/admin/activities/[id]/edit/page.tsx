@@ -42,7 +42,7 @@ export default function EditActivityPage({ params }: { params: Promise<{ id: str
     startTime: '',
     endTime: '',
     maxParticipants: 20,
-    transportMode: 'Bus',
+    transportMode: 'À pied',
     category: '5-8 ans',
     selectedWorkers: [] as number[]
   });
@@ -314,12 +314,10 @@ export default function EditActivityPage({ params }: { params: Promise<{ id: str
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-base"
                   required
                 >
-                  <option value="Bus">🚌 Bus</option>
-                  <option value="Minibus">🚐 Minibus</option>
-                  <option value="Voiture">🚗 Voiture</option>
-                  <option value="Train">🚂 Train</option>
-                  <option value="Métro">🚇 Métro</option>
                   <option value="À pied">🚶 À pied</option>
+                  <option value="Bus">🚌 Bus</option>
+                  <option value="Car">🚐 Car</option>
+                  <option value="Voiture">🚗 Voiture</option>
                 </select>
               </div>
               
