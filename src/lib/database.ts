@@ -409,7 +409,16 @@ export function markAttendance(workerId: number, adminId: number, date: string, 
   });
 }
 
-export function getAttendanceByDate(date: string): Promise<Array<{ name: string; period: string; created_at: string; admin_name: string }>> {
+export function deleteAttendance(attendanceId: number): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    db.run('DELETE FROM attendance WHERE id = ?', [attendanceId], function(err) {
+      if (err) reject(err);
+      else resolve(this.changes > 0);
+    });
+  });
+}
+
+export function getAttendanceByDate(date: string): Promise<Array<{ id: number; name: string; period: string; created_at: string; admin_name: string }>> {
   return new Promise((resolve, reject) => {
     // Vérifier d'abord si la colonne admin_id existe
     db.all("PRAGMA table_info(attendance)", (err, columns) => {
@@ -423,7 +432,7 @@ export function getAttendanceByDate(date: string): Promise<Array<{ name: string;
       if (hasAdminId) {
         // Si la colonne admin_id existe, essayer la requête complète avec LEFT JOIN
         db.all(`
-          SELECT w.name, a.period, a.created_at, COALESCE(adm.name, 'Admin Principal') as admin_name
+          SELECT a.id, w.name, a.period, a.created_at, COALESCE(adm.name, 'Admin Principal') as admin_name
           FROM attendance a
           JOIN workers w ON a.worker_id = w.id
           LEFT JOIN admins adm ON a.admin_id = adm.id
@@ -434,30 +443,30 @@ export function getAttendanceByDate(date: string): Promise<Array<{ name: string;
             // Si la requête échoue, utiliser la requête simplifiée
             console.log('Erreur avec la requête complète, utilisation de la requête simplifiée:', err.message);
             db.all(`
-              SELECT w.name, a.period, a.created_at, 'Admin Principal' as admin_name
+              SELECT a.id, w.name, a.period, a.created_at, 'Admin Principal' as admin_name
               FROM attendance a
               JOIN workers w ON a.worker_id = w.id
               WHERE a.date = ?
               ORDER BY w.name, a.period
             `, [date], (err2, rows2) => {
               if (err2) reject(err2);
-              else resolve(rows2 as Array<{ name: string; period: string; created_at: string; admin_name: string }>);
+              else resolve(rows2 as Array<{ id: number; name: string; period: string; created_at: string; admin_name: string }>);
             });
           } else {
-            resolve(rows as Array<{ name: string; period: string; created_at: string; admin_name: string }>);
+            resolve(rows as Array<{ id: number; name: string; period: string; created_at: string; admin_name: string }>);
           }
         });
       } else {
         // Si la colonne admin_id n'existe pas, utiliser une requête simplifiée
         db.all(`
-          SELECT w.name, a.period, a.created_at, 'Admin Principal' as admin_name
+          SELECT a.id, w.name, a.period, a.created_at, 'Admin Principal' as admin_name
           FROM attendance a
           JOIN workers w ON a.worker_id = w.id
           WHERE a.date = ?
           ORDER BY w.name, a.period
         `, [date], (err, rows) => {
           if (err) reject(err);
-          else resolve(rows as Array<{ name: string; period: string; created_at: string; admin_name: string }>);
+          else resolve(rows as Array<{ id: number; name: string; period: string; created_at: string; admin_name: string }>);
         });
       }
     });

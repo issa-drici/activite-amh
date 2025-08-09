@@ -13,6 +13,7 @@ interface AdminData {
 }
 
 interface Attendance {
+  id: number;
   name: string;
   period: string;
   created_at: string;
@@ -28,6 +29,8 @@ export default function PointagePage() {
   const [showCameraTest, setShowCameraTest] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [attendanceToDelete, setAttendanceToDelete] = useState<Attendance | null>(null);
   const router = useRouter();
 
   const loadAttendance = useCallback(async () => {
@@ -115,6 +118,43 @@ export default function PointagePage() {
     return new Date(dateString).toLocaleDateString('fr-FR', {
       timeZone: 'Europe/Paris'
     });
+  };
+
+  const handleDeleteClick = (record: Attendance) => {
+    setAttendanceToDelete(record);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!attendanceToDelete) return;
+
+    try {
+      const response = await fetch(`/api/attendance/${attendanceToDelete.id}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setMessage(`✅ Présence supprimée : ${attendanceToDelete.name} (${attendanceToDelete.period === 'morning' ? 'Matin' : 'Après-midi'})`);
+        loadAttendance();
+        setShowDeleteModal(false);
+        setAttendanceToDelete(null);
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setMessage(`❌ ${data.message || 'Erreur lors de la suppression'}`);
+        setTimeout(() => setMessage(''), 5000);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      setMessage('❌ Erreur de connexion au serveur');
+      setTimeout(() => setMessage(''), 5000);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setAttendanceToDelete(null);
   };
 
   if (loading) {
@@ -276,9 +316,18 @@ export default function PointagePage() {
                             <span className="font-semibold text-gray-900">{record.name}</span>
                             <p className="text-xs text-gray-500">Pointé par {record.admin_name}</p>
                           </div>
-                          <span className="text-sm font-medium px-3 py-1 rounded-full bg-green-100 text-green-800">
-                            🌅 Matin
-                          </span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-medium px-3 py-1 rounded-full bg-green-100 text-green-800">
+                              🌅 Matin
+                            </span>
+                            <button
+                              onClick={() => handleDeleteClick(record)}
+                              className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                              title="Supprimer ce pointage"
+                            >
+                              🗑️
+                            </button>
+                          </div>
                         </div>
                       ))
                   )}
@@ -310,9 +359,18 @@ export default function PointagePage() {
                             <span className="font-semibold text-gray-900">{record.name}</span>
                             <p className="text-xs text-gray-500">Pointé par {record.admin_name}</p>
                           </div>
-                          <span className="text-sm font-medium px-3 py-1 rounded-full bg-orange-100 text-orange-800">
-                            🌆 Après-midi
-                          </span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-medium px-3 py-1 rounded-full bg-orange-100 text-orange-800">
+                              🌆 Après-midi
+                            </span>
+                            <button
+                              onClick={() => handleDeleteClick(record)}
+                              className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                              title="Supprimer ce pointage"
+                            >
+                              🗑️
+                            </button>
+                          </div>
                         </div>
                       ))
                   )}
@@ -322,6 +380,48 @@ export default function PointagePage() {
           )}
         </div>
       </div>
+
+      {/* Modal de confirmation de suppression */}
+      {showDeleteModal && attendanceToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">⚠️</span>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Confirmer la suppression
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Êtes-vous sûr de vouloir supprimer le pointage de{' '}
+                <span className="font-semibold">{attendanceToDelete.name}</span>{' '}
+                pour la période{' '}
+                <span className="font-semibold">
+                  {attendanceToDelete.period === 'morning' ? 'Matin' : 'Après-midi'}
+                </span> ?
+              </p>
+              <p className="text-sm text-red-600 mb-6">
+                Cette action ne peut pas être annulée.
+              </p>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleDeleteCancel}
+                  className="flex-1 py-3 px-4 bg-gray-200 text-gray-800 rounded-xl font-medium hover:bg-gray-300 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  className="flex-1 py-3 px-4 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors"
+                >
+                  Supprimer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
